@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { CheckCircle2, ShieldAlert, Package, AlertTriangle } from "lucide-react";
-import { DisputeInputReason } from "@workspace/api-client-react/src/generated/api.schemas";
+import type { DisputeInputReason } from "@workspace/api-client-react";
 
 export default function ConfirmPage() {
   const { code } = useParams<{ code: string }>();
@@ -31,7 +31,7 @@ export default function ConfirmPage() {
   if (!deal) return <div className="min-h-screen flex items-center justify-center">Link invalid.</div>;
 
   const handleConfirm = () => {
-    confirmMutation.mutate({ code: deal.code }, {
+    confirmMutation.mutate({ id: deal.id }, {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: getGetDealByCodeQueryKey(deal.code) });
       }
@@ -39,7 +39,7 @@ export default function ConfirmPage() {
   };
 
   const handleDispute = () => {
-    disputeMutation.mutate({ code: deal.code, data: { reason, description: desc, evidenceUrl: evidence } }, {
+    disputeMutation.mutate({ id: deal.id, data: { reason, description: desc, evidenceUrl: evidence } }, {
       onSuccess: () => {
         setShowDispute(false);
         queryClient.invalidateQueries({ queryKey: getGetDealByCodeQueryKey(deal.code) });

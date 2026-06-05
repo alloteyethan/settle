@@ -57,7 +57,7 @@ export default function PayPage() {
   }
 
   const handlePay = () => {
-    payMutation.mutate({ code: deal.code, data: { buyerName: name, buyerPhone: phone, paymentMethod: method } }, {
+    payMutation.mutate({ id: deal.id, data: { buyerName: name, buyerPhone: phone, paymentMethod: method } }, {
       onSuccess: () => {
         setPaid(true);
         queryClient.invalidateQueries({ queryKey: getGetDealByCodeQueryKey(code || "") });

@@ -1,0 +1,104 @@
+# SETTLE — Full Product Design Brief
+
+Here is everything you need to start building immediately.
+
+---
+
+## What SETTLE Is, In One Sentence
+
+A payment link tool that lets any independent seller — on WhatsApp, Instagram, anywhere — collect money safely from strangers, where funds are held automatically and released only when delivery is confirmed.
+
+---
+
+## The Core Mechanic (Never Change This)
+
+1. Seller creates a deal → gets a shareable payment link
+2. Buyer opens link, pays (no account required)
+3. Money is held — neither party can touch it
+4. Buyer confirms receipt → money releases to seller instantly
+5. If buyer does nothing in 48 hours → money releases automatically
+6. If buyer raises a problem → deal is frozen, evidence submitted, human review within 24 hours
+
+That is the whole engine. Everything else is presentation.
+
+---
+
+## The 6 Features You Actually Need to Build
+
+**1. Deal Creator (Seller Side)**
+- Seller enters: item name, amount, description, optional photo
+- Optionally sets a delivery deadline
+- System generates a clean payment link: `settle.app/deal/[code]`
+- Seller copies and shares the link anywhere — WhatsApp, Instagram bio, DM, SMS
+
+**2. Payment Page (Buyer Side — No Account Needed)**
+- Buyer opens the link on any browser
+- Sees: item name, amount, seller name, how SETTLE protection works
+- Pays via Mobile Money (MTN MoMo, Vodafone Cash) or card
+- Gets a confirmation screen and SMS receipt with the deal code
+
+**3. Deal Dashboard (Seller)**
+- List of all active and completed deals
+- Status per deal: Awaiting Payment / Paid & Held / Delivered & Confirmed / Released / Disputed
+- One button: "Mark as Delivered" — triggers 48-hour countdown
+- Shows exactly when funds will auto-release
+
+**4. Delivery Confirmation (Buyer)**
+- Buyer gets an SMS when seller marks delivered
+- Opens a simple page: "Did you receive your order?"
+- Two buttons: Confirm Receipt (releases money now) or Report a Problem
+- No app download. Ever.
+
+**5. Dispute Flow**
+- Buyer selects one reason: Item not received / Wrong or damaged item / Incomplete service
+- Uploads one photo or screenshot as evidence
+- Seller is notified and has 24 hours to respond with their own evidence
+- A SETTLE human reviews and decides — communicated to both parties via SMS
+- Decision: full refund, partial refund, or release to seller
+
+**6. Seller Wallet + Payout**
+- Released funds accumulate in a SETTLE wallet
+- Seller withdraws to Mobile Money or bank at any time
+- Payout is instant, no minimum threshold
+
+---
+
+## What You Are NOT Building (Version 1)
+
+No marketplace. No product listings page. No reviews or ratings system. No chat between buyer and seller inside the app. No buyer accounts. No subscription plans. No web dashboard for analytics yet. No crypto. These are version 2 and beyond. Strip everything that is not the core transaction loop.
+
+---
+
+## How SETTLE Makes Money
+
+Take 2% of every released transaction. Automatically deducted before payout. No monthly fee. No signup fee. The seller only pays when a deal completes successfully. That alignment of incentives is the pitch.
+
+---
+
+## The Trust Problem — How You Solve It
+
+The biggest mistake your competitors made: they asked people to trust a startup holding their money. You solve this by partnering with MTN Mobile Money or a licensed bank as the float holder from day one. The money does not sit with SETTLE — it sits in an escrow sub-account under a regulated institution. You display this prominently everywhere. "Your money is held by MTN MoMo — not us." That one sentence is worth more than any feature.
+
+---
+
+## Tech Stack Recommendation (Fastest to Launch)
+
+- **Frontend:** React (web app, mobile-responsive) — the buyer never downloads anything
+- **Backend:** Node.js / Supabase for speed
+- **Payments:** Paystack (Ghana-supported, has escrow-style split payment and Mobile Money integration built in) — this is your fastest path to a working hold-and-release mechanic
+- **SMS:** Twilio or Africa's Talking for delivery confirmations and dispute alerts
+- **Hosting:** Vercel (frontend) + Railway or Render (backend)
+
+Paystack's "Split Payments" and their escrow-adjacent features mean you do not need to build a custom money-holding system from scratch. Confirm their current escrow product with them directly before building.
+
+---
+
+## The Launch Strategy (Based on Why Competitors Failed)
+
+Do not launch a website and wait. Do this instead:
+
+Find 20 active WhatsApp and Instagram sellers in one category — clothing, food, electronics, anything. Give them free access. Sit with them. Watch them use it. The first 20 real transactions will tell you more than any design document. Your growth loop is the link itself — every buyer who has a safe experience is a future seller.
+
+---
+
+That is your complete blueprint. What do you want to start with first — the deal creator flow, the payment page, or the seller dashboard?
