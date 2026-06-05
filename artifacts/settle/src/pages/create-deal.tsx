@@ -33,9 +33,9 @@ export default function CreateDealPage() {
     },
   });
 
-  const price = form.watch("price");
-  const fee = price ? (price * 0.02) : 0;
-  const payout = price ? (price - fee) : 0;
+  const price = Number(form.watch("price")) || 0;
+  const fee = price * 0.02;
+  const payout = price - fee;
 
   function onSubmit(values: z.infer<typeof formSchema>) {
     createDeal.mutate({ data: values }, {
