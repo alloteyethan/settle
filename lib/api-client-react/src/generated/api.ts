@@ -32,6 +32,7 @@ import type {
   DisputeAdmin,
   DisputeInput,
   DisputeResolution,
+  FulfillInput,
   GetRecentActivityParams,
   HealthStatus,
   ListDealsParams,
@@ -877,6 +878,78 @@ export const useInitiatePayment = <TError = ErrorType<unknown>,
       return useMutation(getInitiatePaymentMutationOptions(options));
     }
 
+export const getFulfillDealUrl = (id: number,) => {
+
+
+
+
+  return `/api/deals/${id}/fulfill`
+}
+
+/**
+ * @summary Seller confirms fulfillment — irreversible
+ */
+export const fulfillDeal = async (id: number,
+    fulfillInput: FulfillInput, options?: RequestInit): Promise<Deal> => {
+
+  return customFetch<Deal>(getFulfillDealUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      fulfillInput,)
+  }
+);}
+
+
+
+
+export const getFulfillDealMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof fulfillDeal>>, TError,{id: number;data: BodyType<FulfillInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof fulfillDeal>>, TError,{id: number;data: BodyType<FulfillInput>}, TContext> => {
+
+const mutationKey = ['fulfillDeal'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof fulfillDeal>>, {id: number;data: BodyType<FulfillInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  fulfillDeal(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type FulfillDealMutationResult = NonNullable<Awaited<ReturnType<typeof fulfillDeal>>>
+    export type FulfillDealMutationBody = BodyType<FulfillInput>
+    export type FulfillDealMutationError = ErrorType<void>
+
+    /**
+ * @summary Seller confirms fulfillment — irreversible
+ */
+export const useFulfillDeal = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof fulfillDeal>>, TError,{id: number;data: BodyType<FulfillInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof fulfillDeal>>,
+        TError,
+        {id: number;data: BodyType<FulfillInput>},
+        TContext
+      > => {
+      return useMutation(getFulfillDealMutationOptions(options));
+    }
+
 export const getMarkDispatchedUrl = (id: number,) => {
 
 
@@ -886,7 +959,7 @@ export const getMarkDispatchedUrl = (id: number,) => {
 }
 
 /**
- * @summary Seller marks item as dispatched
+ * @summary Seller marks item as dispatched (legacy — use /fulfill instead)
  */
 export const markDispatched = async (id: number, options?: RequestInit): Promise<Deal> => {
 
@@ -934,7 +1007,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type MarkDispatchedMutationError = ErrorType<unknown>
 
     /**
- * @summary Seller marks item as dispatched
+ * @summary Seller marks item as dispatched (legacy — use /fulfill instead)
  */
 export const useMarkDispatched = <TError = ErrorType<unknown>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof markDispatched>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
@@ -956,7 +1029,7 @@ export const getConfirmDeliveryUrl = (id: number,) => {
 }
 
 /**
- * @summary Buyer confirms delivery and releases funds
+ * @summary Buyer confirms delivery and releases funds — irreversible
  */
 export const confirmDelivery = async (id: number, options?: RequestInit): Promise<Deal> => {
 
@@ -972,7 +1045,7 @@ export const confirmDelivery = async (id: number, options?: RequestInit): Promis
 
 
 
-export const getConfirmDeliveryMutationOptions = <TError = ErrorType<unknown>,
+export const getConfirmDeliveryMutationOptions = <TError = ErrorType<void>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof confirmDelivery>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof confirmDelivery>>, TError,{id: number}, TContext> => {
 
@@ -1001,12 +1074,12 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type ConfirmDeliveryMutationResult = NonNullable<Awaited<ReturnType<typeof confirmDelivery>>>
 
-    export type ConfirmDeliveryMutationError = ErrorType<unknown>
+    export type ConfirmDeliveryMutationError = ErrorType<void>
 
     /**
- * @summary Buyer confirms delivery and releases funds
+ * @summary Buyer confirms delivery and releases funds — irreversible
  */
-export const useConfirmDelivery = <TError = ErrorType<unknown>,
+export const useConfirmDelivery = <TError = ErrorType<void>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof confirmDelivery>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof confirmDelivery>>,

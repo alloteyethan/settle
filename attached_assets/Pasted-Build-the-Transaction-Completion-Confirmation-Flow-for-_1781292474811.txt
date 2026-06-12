@@ -1,0 +1,98 @@
+Build the Transaction Completion & Confirmation Flow for SETTLE.
+
+Context:
+The payment flow is already built. Buyers can pay and transactions can be created. We are now building the final stage of the transaction journey before escrow release.
+
+Goal:
+Create a confirmation page that tracks both buyer and seller actions and clearly shows the status of the transaction.
+
+Transaction Status Flow:
+
+1. PAYMENT RECEIVED
+
+* Buyer has successfully paid.
+* Transaction status shows: "Payment Protected"
+* Seller receives notification to begin fulfillment.
+
+2. SELLER CONFIRMATION
+   Seller must confirm one of the following:
+
+* Product has been shipped
+* Product has been delivered
+* Service has been completed
+* Digital product has been sent
+
+When seller confirms:
+
+* Save timestamp.
+* Update status to "Seller Fulfilled".
+* Show green completed indicator.
+
+3. BUYER CONFIRMATION
+   Buyer receives notification that seller has fulfilled the order.
+
+Buyer can choose:
+
+* Confirm Received
+* Report Problem
+
+If buyer confirms:
+
+* Save timestamp.
+* Update status to "Buyer Confirmed".
+* Show green completed indicator.
+
+4. COMPLETION PAGE
+
+Display a progress tracker:
+
+✓ Payment Received
+✓ Seller Fulfilled
+✓ Buyer Confirmed
+○ Escrow Release
+
+For now, Escrow Release remains a placeholder and is not connected to real payment release logic.
+
+If both seller and buyer have confirmed:
+
+* Display success state:
+  "Transaction Successfully Completed"
+
+* Display message:
+  "Both parties have confirmed this transaction. Escrow release requirements have been met."
+
+* Display green success badge.
+
+5. REPORT PROBLEM FLOW
+
+If buyer clicks Report Problem:
+
+* Open dispute form.
+* Require dispute reason.
+* Allow image upload.
+* Set transaction status to DISPUTED.
+* Stop progression to completion.
+
+6. DATA MODEL
+
+Store:
+
+* sellerConfirmed (boolean)
+* sellerConfirmedAt (timestamp)
+* buyerConfirmed (boolean)
+* buyerConfirmedAt (timestamp)
+* disputeStatus
+* transactionStatus
+
+7. UI REQUIREMENTS
+
+* Modern fintech-style design.
+* Clear visual progress tracker.
+* Green for completed steps.
+* Yellow for pending steps.
+* Red for disputes.
+* Mobile-first responsive layout.
+* PWA compatible.
+
+Important:
+Build this as a reusable transaction status component because it will later connect to the actual escrow release engine.

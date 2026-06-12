@@ -85,9 +85,12 @@ export const GetSellerDashboardResponse = zod.object({
   "sellerPayout": zod.number().optional(),
   "deliveryWindowHours": zod.number(),
   "status": zod.enum(['created', 'locked', 'dispatched', 'delivered', 'settled', 'disputed']),
+  "fulfillmentType": zod.union([zod.literal('shipped'),zod.literal('delivered'),zod.literal('service_completed'),zod.literal('digital_sent'),zod.literal(null)]).nullish(),
   "sellerId": zod.number(),
   "buyerPhone": zod.string().nullish(),
   "buyerName": zod.string().nullish(),
+  "sellerConfirmedAt": zod.string().nullish(),
+  "buyerConfirmedAt": zod.string().nullish(),
   "dispatchedAt": zod.string().nullish(),
   "deliveryDeadline": zod.string().nullish(),
   "settledAt": zod.string().nullish(),
@@ -133,9 +136,12 @@ export const ListDealsResponse = zod.object({
   "sellerPayout": zod.number().optional(),
   "deliveryWindowHours": zod.number(),
   "status": zod.enum(['created', 'locked', 'dispatched', 'delivered', 'settled', 'disputed']),
+  "fulfillmentType": zod.union([zod.literal('shipped'),zod.literal('delivered'),zod.literal('service_completed'),zod.literal('digital_sent'),zod.literal(null)]).nullish(),
   "sellerId": zod.number(),
   "buyerPhone": zod.string().nullish(),
   "buyerName": zod.string().nullish(),
+  "sellerConfirmedAt": zod.string().nullish(),
+  "buyerConfirmedAt": zod.string().nullish(),
   "dispatchedAt": zod.string().nullish(),
   "deliveryDeadline": zod.string().nullish(),
   "settledAt": zod.string().nullish(),
@@ -189,9 +195,12 @@ export const GetDealResponse = zod.object({
   "sellerPayout": zod.number().optional(),
   "deliveryWindowHours": zod.number(),
   "status": zod.enum(['created', 'locked', 'dispatched', 'delivered', 'settled', 'disputed']),
+  "fulfillmentType": zod.union([zod.literal('shipped'),zod.literal('delivered'),zod.literal('service_completed'),zod.literal('digital_sent'),zod.literal(null)]).nullish(),
   "sellerId": zod.number(),
   "buyerPhone": zod.string().nullish(),
   "buyerName": zod.string().nullish(),
+  "sellerConfirmedAt": zod.string().nullish(),
+  "buyerConfirmedAt": zod.string().nullish(),
   "dispatchedAt": zod.string().nullish(),
   "deliveryDeadline": zod.string().nullish(),
   "settledAt": zod.string().nullish(),
@@ -235,7 +244,10 @@ export const GetDealByCodeResponse = zod.object({
   "price": zod.number(),
   "deliveryWindowHours": zod.number(),
   "status": zod.enum(['created', 'locked', 'dispatched', 'delivered', 'settled', 'disputed']),
+  "fulfillmentType": zod.union([zod.literal('shipped'),zod.literal('delivered'),zod.literal('service_completed'),zod.literal('digital_sent'),zod.literal(null)]).nullish(),
   "sellerName": zod.string(),
+  "sellerConfirmedAt": zod.string().nullish(),
+  "buyerConfirmedAt": zod.string().nullish(),
   "createdAt": zod.string()
 })
 
@@ -266,9 +278,12 @@ export const InitiatePaymentResponse = zod.object({
   "sellerPayout": zod.number().optional(),
   "deliveryWindowHours": zod.number(),
   "status": zod.enum(['created', 'locked', 'dispatched', 'delivered', 'settled', 'disputed']),
+  "fulfillmentType": zod.union([zod.literal('shipped'),zod.literal('delivered'),zod.literal('service_completed'),zod.literal('digital_sent'),zod.literal(null)]).nullish(),
   "sellerId": zod.number(),
   "buyerPhone": zod.string().nullish(),
   "buyerName": zod.string().nullish(),
+  "sellerConfirmedAt": zod.string().nullish(),
+  "buyerConfirmedAt": zod.string().nullish(),
   "dispatchedAt": zod.string().nullish(),
   "deliveryDeadline": zod.string().nullish(),
   "settledAt": zod.string().nullish(),
@@ -290,7 +305,55 @@ export const InitiatePaymentResponse = zod.object({
 
 
 /**
- * @summary Seller marks item as dispatched
+ * @summary Seller confirms fulfillment — irreversible
+ */
+export const FulfillDealParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const FulfillDealBody = zod.object({
+  "fulfillmentType": zod.enum(['shipped', 'delivered', 'service_completed', 'digital_sent'])
+})
+
+export const FulfillDealResponse = zod.object({
+  "id": zod.number(),
+  "code": zod.string(),
+  "shortUrl": zod.string(),
+  "itemName": zod.string(),
+  "description": zod.string().nullable(),
+  "price": zod.number(),
+  "feeAmount": zod.number().optional(),
+  "sellerPayout": zod.number().optional(),
+  "deliveryWindowHours": zod.number(),
+  "status": zod.enum(['created', 'locked', 'dispatched', 'delivered', 'settled', 'disputed']),
+  "fulfillmentType": zod.union([zod.literal('shipped'),zod.literal('delivered'),zod.literal('service_completed'),zod.literal('digital_sent'),zod.literal(null)]).nullish(),
+  "sellerId": zod.number(),
+  "buyerPhone": zod.string().nullish(),
+  "buyerName": zod.string().nullish(),
+  "sellerConfirmedAt": zod.string().nullish(),
+  "buyerConfirmedAt": zod.string().nullish(),
+  "dispatchedAt": zod.string().nullish(),
+  "deliveryDeadline": zod.string().nullish(),
+  "settledAt": zod.string().nullish(),
+  "dispute": zod.object({
+  "id": zod.number(),
+  "dealId": zod.number(),
+  "reason": zod.enum(['item_never_arrived', 'wrong_damaged_item', 'incomplete_service']),
+  "description": zod.string().nullish(),
+  "evidenceUrl": zod.string().nullish(),
+  "counterProofUrl": zod.string().nullish(),
+  "counterProofDescription": zod.string().nullish(),
+  "status": zod.enum(['open', 'counter_submitted', 'resolved_refund', 'resolved_seller', 'escalated']),
+  "resolution": zod.string().nullish(),
+  "createdAt": zod.string(),
+  "resolvedAt": zod.string().nullish()
+}).optional(),
+  "createdAt": zod.string()
+})
+
+
+/**
+ * @summary Seller marks item as dispatched (legacy — use /fulfill instead)
  */
 export const MarkDispatchedParams = zod.object({
   "id": zod.coerce.number()
@@ -307,9 +370,12 @@ export const MarkDispatchedResponse = zod.object({
   "sellerPayout": zod.number().optional(),
   "deliveryWindowHours": zod.number(),
   "status": zod.enum(['created', 'locked', 'dispatched', 'delivered', 'settled', 'disputed']),
+  "fulfillmentType": zod.union([zod.literal('shipped'),zod.literal('delivered'),zod.literal('service_completed'),zod.literal('digital_sent'),zod.literal(null)]).nullish(),
   "sellerId": zod.number(),
   "buyerPhone": zod.string().nullish(),
   "buyerName": zod.string().nullish(),
+  "sellerConfirmedAt": zod.string().nullish(),
+  "buyerConfirmedAt": zod.string().nullish(),
   "dispatchedAt": zod.string().nullish(),
   "deliveryDeadline": zod.string().nullish(),
   "settledAt": zod.string().nullish(),
@@ -331,7 +397,7 @@ export const MarkDispatchedResponse = zod.object({
 
 
 /**
- * @summary Buyer confirms delivery and releases funds
+ * @summary Buyer confirms delivery and releases funds — irreversible
  */
 export const ConfirmDeliveryParams = zod.object({
   "id": zod.coerce.number()
@@ -348,9 +414,12 @@ export const ConfirmDeliveryResponse = zod.object({
   "sellerPayout": zod.number().optional(),
   "deliveryWindowHours": zod.number(),
   "status": zod.enum(['created', 'locked', 'dispatched', 'delivered', 'settled', 'disputed']),
+  "fulfillmentType": zod.union([zod.literal('shipped'),zod.literal('delivered'),zod.literal('service_completed'),zod.literal('digital_sent'),zod.literal(null)]).nullish(),
   "sellerId": zod.number(),
   "buyerPhone": zod.string().nullish(),
   "buyerName": zod.string().nullish(),
+  "sellerConfirmedAt": zod.string().nullish(),
+  "buyerConfirmedAt": zod.string().nullish(),
   "dispatchedAt": zod.string().nullish(),
   "deliveryDeadline": zod.string().nullish(),
   "settledAt": zod.string().nullish(),
@@ -403,9 +472,12 @@ export const IssueRefundResponse = zod.object({
   "sellerPayout": zod.number().optional(),
   "deliveryWindowHours": zod.number(),
   "status": zod.enum(['created', 'locked', 'dispatched', 'delivered', 'settled', 'disputed']),
+  "fulfillmentType": zod.union([zod.literal('shipped'),zod.literal('delivered'),zod.literal('service_completed'),zod.literal('digital_sent'),zod.literal(null)]).nullish(),
   "sellerId": zod.number(),
   "buyerPhone": zod.string().nullish(),
   "buyerName": zod.string().nullish(),
+  "sellerConfirmedAt": zod.string().nullish(),
+  "buyerConfirmedAt": zod.string().nullish(),
   "dispatchedAt": zod.string().nullish(),
   "deliveryDeadline": zod.string().nullish(),
   "settledAt": zod.string().nullish(),
@@ -491,9 +563,12 @@ export const ListAdminDisputesResponseItem = zod.object({
   "sellerPayout": zod.number().optional(),
   "deliveryWindowHours": zod.number(),
   "status": zod.enum(['created', 'locked', 'dispatched', 'delivered', 'settled', 'disputed']),
+  "fulfillmentType": zod.union([zod.literal('shipped'),zod.literal('delivered'),zod.literal('service_completed'),zod.literal('digital_sent'),zod.literal(null)]).nullish(),
   "sellerId": zod.number(),
   "buyerPhone": zod.string().nullish(),
   "buyerName": zod.string().nullish(),
+  "sellerConfirmedAt": zod.string().nullish(),
+  "buyerConfirmedAt": zod.string().nullish(),
   "dispatchedAt": zod.string().nullish(),
   "deliveryDeadline": zod.string().nullish(),
   "settledAt": zod.string().nullish(),

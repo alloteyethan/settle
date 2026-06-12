@@ -5,6 +5,7 @@
  * SETTLE escrow platform API
  * OpenAPI spec version: 0.1.0
  */
+import type { DealFulfillmentType } from './dealFulfillmentType';
 import type { DealStatus } from './dealStatus';
 import type { Dispute } from './dispute';
 
@@ -20,11 +21,17 @@ export interface Deal {
   sellerPayout?: number;
   deliveryWindowHours: number;
   status: DealStatus;
+  /** @nullable */
+  fulfillmentType?: DealFulfillmentType;
   sellerId: number;
   /** @nullable */
   buyerPhone?: string | null;
   /** @nullable */
   buyerName?: string | null;
+  /** @nullable */
+  sellerConfirmedAt?: string | null;
+  /** @nullable */
+  buyerConfirmedAt?: string | null;
   /** @nullable */
   dispatchedAt?: string | null;
   /** @nullable */

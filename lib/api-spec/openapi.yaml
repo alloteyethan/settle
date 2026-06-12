@@ -228,11 +228,40 @@ paths:
               schema:
                 $ref: "#/components/schemas/Deal"
 
+  /deals/{id}/fulfill:
+    post:
+      operationId: fulfillDeal
+      tags: [deals]
+      summary: Seller confirms fulfillment — irreversible
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FulfillInput"
+      responses:
+        "200":
+          description: Deal fulfilled, waiting for buyer confirmation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Deal"
+        "400":
+          description: Deal is not in a fulfillable state
+        "404":
+          description: Not found
+
   /deals/{id}/dispatch:
     post:
       operationId: markDispatched
       tags: [deals]
-      summary: Seller marks item as dispatched
+      summary: Seller marks item as dispatched (legacy — use /fulfill instead)
       parameters:
         - name: id
           in: path
@@ -251,7 +280,7 @@ paths:
     post:
       operationId: confirmDelivery
       tags: [deals]
-      summary: Buyer confirms delivery and releases funds
+      summary: Buyer confirms delivery and releases funds — irreversible
       parameters:
         - name: id
           in: path
@@ -265,6 +294,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Deal"
+        "400":
+          description: Deal is not in a confirmable state
 
   /deals/{id}/disputes:
     post:
@@ -503,11 +534,18 @@ components:
         status:
           type: string
           enum: [created, locked, dispatched, delivered, settled, disputed]
+        fulfillmentType:
+          type: ["string", "null"]
+          enum: [shipped, delivered, service_completed, digital_sent, null]
         sellerId:
           type: integer
         buyerPhone:
           type: ["string", "null"]
         buyerName:
+          type: ["string", "null"]
+        sellerConfirmedAt:
+          type: ["string", "null"]
+        buyerConfirmedAt:
           type: ["string", "null"]
         dispatchedAt:
           type: ["string", "null"]
@@ -539,8 +577,15 @@ components:
         status:
           type: string
           enum: [created, locked, dispatched, delivered, settled, disputed]
+        fulfillmentType:
+          type: ["string", "null"]
+          enum: [shipped, delivered, service_completed, digital_sent, null]
         sellerName:
           type: string
+        sellerConfirmedAt:
+          type: ["string", "null"]
+        buyerConfirmedAt:
+          type: ["string", "null"]
         createdAt:
           type: string
 
@@ -568,6 +613,14 @@ components:
         deliveryWindowHours:
           type: integer
           default: 48
+
+    FulfillInput:
+      type: object
+      required: [fulfillmentType]
+      properties:
+        fulfillmentType:
+          type: string
+          enum: [shipped, delivered, service_completed, digital_sent]
 
     PaymentInput:
       type: object

@@ -12,6 +12,13 @@ export const dealStatusEnum = pgEnum("deal_status", [
   "disputed",
 ]);
 
+export const fulfillmentTypeEnum = pgEnum("fulfillment_type", [
+  "shipped",
+  "delivered",
+  "service_completed",
+  "digital_sent",
+]);
+
 export const dealsTable = pgTable("deals", {
   id: serial("id").primaryKey(),
   code: text("code").notNull().unique(),
@@ -28,6 +35,9 @@ export const dealsTable = pgTable("deals", {
     .references(() => sellersTable.id),
   buyerPhone: text("buyer_phone"),
   buyerName: text("buyer_name"),
+  fulfillmentType: fulfillmentTypeEnum("fulfillment_type"),
+  sellerConfirmedAt: timestamp("seller_confirmed_at", { withTimezone: true }),
+  buyerConfirmedAt: timestamp("buyer_confirmed_at", { withTimezone: true }),
   dispatchedAt: timestamp("dispatched_at", { withTimezone: true }),
   deliveryDeadline: timestamp("delivery_deadline", { withTimezone: true }),
   settledAt: timestamp("settled_at", { withTimezone: true }),

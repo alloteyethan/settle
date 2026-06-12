@@ -49,6 +49,19 @@ export const DealStatus = {
   disputed: 'disputed',
 } as const;
 
+/**
+ * @nullable
+ */
+export type DealFulfillmentType = typeof DealFulfillmentType[keyof typeof DealFulfillmentType] | null;
+
+
+export const DealFulfillmentType = {
+  shipped: 'shipped',
+  delivered: 'delivered',
+  service_completed: 'service_completed',
+  digital_sent: 'digital_sent',
+} as const;
+
 export type DisputeReason = typeof DisputeReason[keyof typeof DisputeReason];
 
 
@@ -101,11 +114,17 @@ export interface Deal {
   sellerPayout?: number;
   deliveryWindowHours: number;
   status: DealStatus;
+  /** @nullable */
+  fulfillmentType?: DealFulfillmentType;
   sellerId: number;
   /** @nullable */
   buyerPhone?: string | null;
   /** @nullable */
   buyerName?: string | null;
+  /** @nullable */
+  sellerConfirmedAt?: string | null;
+  /** @nullable */
+  buyerConfirmedAt?: string | null;
   /** @nullable */
   dispatchedAt?: string | null;
   /** @nullable */
@@ -138,6 +157,19 @@ export const DealPublicStatus = {
   disputed: 'disputed',
 } as const;
 
+/**
+ * @nullable
+ */
+export type DealPublicFulfillmentType = typeof DealPublicFulfillmentType[keyof typeof DealPublicFulfillmentType] | null;
+
+
+export const DealPublicFulfillmentType = {
+  shipped: 'shipped',
+  delivered: 'delivered',
+  service_completed: 'service_completed',
+  digital_sent: 'digital_sent',
+} as const;
+
 export interface DealPublic {
   id: number;
   code: string;
@@ -147,7 +179,13 @@ export interface DealPublic {
   price: number;
   deliveryWindowHours: number;
   status: DealPublicStatus;
+  /** @nullable */
+  fulfillmentType?: DealPublicFulfillmentType;
   sellerName: string;
+  /** @nullable */
+  sellerConfirmedAt?: string | null;
+  /** @nullable */
+  buyerConfirmedAt?: string | null;
   createdAt: string;
 }
 
@@ -161,6 +199,20 @@ export interface DealInput {
   description?: string;
   price: number;
   deliveryWindowHours?: number;
+}
+
+export type FulfillInputFulfillmentType = typeof FulfillInputFulfillmentType[keyof typeof FulfillInputFulfillmentType];
+
+
+export const FulfillInputFulfillmentType = {
+  shipped: 'shipped',
+  delivered: 'delivered',
+  service_completed: 'service_completed',
+  digital_sent: 'digital_sent',
+} as const;
+
+export interface FulfillInput {
+  fulfillmentType: FulfillInputFulfillmentType;
 }
 
 export type PaymentInputPaymentMethod = typeof PaymentInputPaymentMethod[keyof typeof PaymentInputPaymentMethod];

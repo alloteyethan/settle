@@ -13,6 +13,8 @@ import {
   InitiatePaymentParams,
   MarkDispatchedParams,
   ConfirmDeliveryParams,
+  FulfillDealParams,
+  FulfillDealBody,
 } from "@workspace/api-zod";
 
 const router = Router();
@@ -58,9 +60,12 @@ async function formatDeal(deal: typeof dealsTable.$inferSelect) {
     sellerPayout: parseFloat(deal.sellerPayout),
     deliveryWindowHours: deal.deliveryWindowHours,
     status: deal.status,
+    fulfillmentType: deal.fulfillmentType ?? null,
     sellerId: deal.sellerId,
     buyerPhone: deal.buyerPhone ?? null,
     buyerName: deal.buyerName ?? null,
+    sellerConfirmedAt: deal.sellerConfirmedAt?.toISOString() ?? null,
+    buyerConfirmedAt: deal.buyerConfirmedAt?.toISOString() ?? null,
     dispatchedAt: deal.dispatchedAt?.toISOString() ?? null,
     deliveryDeadline: deal.deliveryDeadline?.toISOString() ?? null,
     settledAt: deal.settledAt?.toISOString() ?? null,
@@ -101,7 +106,6 @@ router.post("/deals", requireAuth, async (req: AuthRequest, res: Response) => {
   const payout = price - fee;
 
   let code = generateCode();
-  // ensure uniqueness
   let attempts = 0;
   while (attempts < 5) {
     const existing = await db.select().from(dealsTable).where(eq(dealsTable.code, code)).limit(1);
@@ -123,7 +127,6 @@ router.post("/deals", requireAuth, async (req: AuthRequest, res: Response) => {
     sellerId: req.sellerId!,
   }).returning();
 
-  // Log activity
   await db.insert(activityTable).values({
     sellerId: req.sellerId!,
     dealId: deal.id,
@@ -171,7 +174,7 @@ router.delete("/deals/:id", requireAuth, async (req: AuthRequest, res: Response)
   res.status(204).send();
 });
 
-// Get deal by code (public - buyer portal)
+// Get deal by code (public — buyer portal)
 router.get("/deals/link/:code", async (req, res) => {
   const parsed = GetDealByCodeParams.safeParse(req.params);
   if (!parsed.success) {
@@ -192,7 +195,10 @@ router.get("/deals/link/:code", async (req, res) => {
     price: parseFloat(deal.price),
     deliveryWindowHours: deal.deliveryWindowHours,
     status: deal.status,
+    fulfillmentType: deal.fulfillmentType ?? null,
     sellerName: seller?.name ?? "Seller",
+    sellerConfirmedAt: deal.sellerConfirmedAt?.toISOString() ?? null,
+    buyerConfirmedAt: deal.buyerConfirmedAt?.toISOString() ?? null,
     createdAt: deal.createdAt.toISOString(),
   });
 });
@@ -233,7 +239,63 @@ router.post("/deals/:id/pay", async (req, res) => {
   res.json(await formatDeal(updated));
 });
 
-// Seller marks as dispatched
+// Seller confirms fulfillment — IRREVERSIBLE
+// Only allowed when status === 'locked'. Once called, status moves to 'dispatched' and cannot be undone.
+router.post("/deals/:id/fulfill", requireAuth, async (req: AuthRequest, res: Response) => {
+  const parsed = FulfillDealParams.safeParse(req.params);
+  if (!parsed.success) {
+    res.status(400).json({ error: "Invalid id" });
+    return;
+  }
+  const bodyParsed = FulfillDealBody.safeParse(req.body);
+  if (!bodyParsed.success) {
+    res.status(400).json({ error: "Validation error", details: bodyParsed.error.issues });
+    return;
+  }
+  const [deal] = await db.select().from(dealsTable)
+    .where(and(eq(dealsTable.id, parsed.data.id), eq(dealsTable.sellerId, req.sellerId!)))
+    .limit(1);
+  if (!deal) {
+    res.status(404).json({ error: "Deal not found" });
+    return;
+  }
+  if (deal.status !== "locked") {
+    res.status(400).json({
+      error: deal.status === "created"
+        ? "Buyer has not paid yet"
+        : "Fulfillment has already been confirmed and cannot be changed",
+    });
+    return;
+  }
+
+  const now = new Date();
+  const deliveryDeadline = new Date(now.getTime() + deal.deliveryWindowHours * 60 * 60 * 1000);
+
+  const [updated] = await db.update(dealsTable)
+    .set({
+      status: "dispatched",
+      fulfillmentType: bodyParsed.data.fulfillmentType as typeof dealsTable.$inferSelect["fulfillmentType"],
+      sellerConfirmedAt: now,
+      dispatchedAt: now,
+      deliveryDeadline,
+    })
+    .where(eq(dealsTable.id, deal.id))
+    .returning();
+
+  await db.insert(activityTable).values({
+    sellerId: deal.sellerId,
+    dealId: deal.id,
+    type: "dispatched",
+    itemName: deal.itemName,
+    amount: deal.price,
+    buyerName: deal.buyerName,
+  });
+
+  logger.info({ dealId: deal.id, fulfillmentType: bodyParsed.data.fulfillmentType }, "Deal fulfilled by seller");
+  res.json(await formatDeal(updated));
+});
+
+// Seller marks as dispatched (legacy — delegates to fulfill)
 router.post("/deals/:id/dispatch", requireAuth, async (req: AuthRequest, res: Response) => {
   const parsed = MarkDispatchedParams.safeParse(req.params);
   if (!parsed.success) {
@@ -251,10 +313,10 @@ router.post("/deals/:id/dispatch", requireAuth, async (req: AuthRequest, res: Re
     res.status(400).json({ error: "Deal must be locked/paid before dispatching" });
     return;
   }
-  const dispatchedAt = new Date();
-  const deliveryDeadline = new Date(dispatchedAt.getTime() + deal.deliveryWindowHours * 60 * 60 * 1000);
+  const now = new Date();
+  const deliveryDeadline = new Date(now.getTime() + deal.deliveryWindowHours * 60 * 60 * 1000);
   const [updated] = await db.update(dealsTable)
-    .set({ status: "dispatched", dispatchedAt, deliveryDeadline })
+    .set({ status: "dispatched", sellerConfirmedAt: now, dispatchedAt: now, deliveryDeadline })
     .where(eq(dealsTable.id, deal.id))
     .returning();
   await db.insert(activityTable).values({
@@ -268,27 +330,38 @@ router.post("/deals/:id/dispatch", requireAuth, async (req: AuthRequest, res: Re
   res.json(await formatDeal(updated));
 });
 
-// Buyer confirms delivery — releases funds
+// Buyer confirms delivery — IRREVERSIBLE
+// Only allowed when status === 'dispatched'. Moves to 'settled' and cannot be undone without a dispute.
 router.post("/deals/:id/confirm", async (req, res) => {
-  const id = parseInt(req.params.id, 10);
-  const [deal] = await db.select().from(dealsTable).where(eq(dealsTable.id, id)).limit(1);
+  const parsed = ConfirmDeliveryParams.safeParse(req.params);
+  if (!parsed.success) {
+    res.status(400).json({ error: "Invalid id" });
+    return;
+  }
+  const [deal] = await db.select().from(dealsTable).where(eq(dealsTable.id, parsed.data.id)).limit(1);
   if (!deal) {
     res.status(404).json({ error: "Deal not found" });
     return;
   }
   if (deal.status !== "dispatched") {
-    res.status(400).json({ error: "Deal must be dispatched before confirming" });
+    res.status(400).json({
+      error: deal.status === "settled"
+        ? "Delivery has already been confirmed and cannot be changed"
+        : "Seller has not confirmed fulfillment yet",
+    });
     return;
   }
-  const settledAt = new Date();
+
+  const now = new Date();
   const [updated] = await db.update(dealsTable)
-    .set({ status: "settled", settledAt })
+    .set({ status: "settled", buyerConfirmedAt: now, settledAt: now })
     .where(eq(dealsTable.id, deal.id))
     .returning();
-  // Update seller earnings
+
   await db.update(sellersTable)
     .set({ totalEarnings: sql`${sellersTable.totalEarnings} + ${deal.sellerPayout}` })
     .where(eq(sellersTable.id, deal.sellerId));
+
   await db.insert(activityTable).values({
     sellerId: deal.sellerId,
     dealId: deal.id,
@@ -297,6 +370,8 @@ router.post("/deals/:id/confirm", async (req, res) => {
     amount: deal.sellerPayout,
     buyerName: deal.buyerName,
   });
+
+  logger.info({ dealId: deal.id }, "Delivery confirmed by buyer — deal settled");
   res.json(await formatDeal(updated));
 });
 

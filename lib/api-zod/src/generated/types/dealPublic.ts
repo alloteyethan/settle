@@ -5,6 +5,7 @@
  * SETTLE escrow platform API
  * OpenAPI spec version: 0.1.0
  */
+import type { DealPublicFulfillmentType } from './dealPublicFulfillmentType';
 import type { DealPublicStatus } from './dealPublicStatus';
 
 export interface DealPublic {
@@ -16,6 +17,12 @@ export interface DealPublic {
   price: number;
   deliveryWindowHours: number;
   status: DealPublicStatus;
+  /** @nullable */
+  fulfillmentType?: DealPublicFulfillmentType;
   sellerName: string;
+  /** @nullable */
+  sellerConfirmedAt?: string | null;
+  /** @nullable */
+  buyerConfirmedAt?: string | null;
   createdAt: string;
 }
