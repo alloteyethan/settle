@@ -3,6 +3,7 @@ import crypto from "node:crypto";
 import { db, dealsTable, activityTable, sellersTable } from "@workspace/db";
 import { eq, and } from "drizzle-orm";
 import { logger } from "../lib/logger";
+import { notifySellerPaymentReceived } from "../lib/notify";
 import type { Request, Response } from "express";
 
 const router = Router();
@@ -194,8 +195,28 @@ router.get("/deals/:id/paystack/verify", async (req: Request, res: Response) => 
     return;
   }
 
-  const [seller] = await db.select({ name: sellersTable.name }).from(sellersTable).where(eq(sellersTable.id, updated.sellerId)).limit(1);
+  const [seller] = await db
+    .select({ name: sellersTable.name, email: sellersTable.email })
+    .from(sellersTable)
+    .where(eq(sellersTable.id, updated.sellerId))
+    .limit(1);
   logger.info({ dealId, reference }, "Payment verified and deal locked");
+
+  // Send seller notification (non-blocking — never delays the response)
+  if (seller?.email) {
+    const proto = (req.headers["x-forwarded-proto"] as string) || req.protocol;
+    const host = (req.headers["x-forwarded-host"] as string) || req.get("host") || "";
+    notifySellerPaymentReceived({
+      sellerName: seller.name,
+      sellerEmail: seller.email,
+      buyerName: updated.buyerName ?? "Unknown Buyer",
+      buyerPhone: updated.buyerPhone ?? "",
+      itemName: updated.itemName,
+      amount: parseFloat(updated.price),
+      dealCode: updated.code,
+      dashboardUrl: `${proto}://${host}/deals/${updated.id}`,
+    }).catch((err) => logger.error({ err }, "Seller notification failed"));
+  }
 
   res.json({
     status: "success",
@@ -269,8 +290,33 @@ router.post("/webhooks/paystack", async (req: Request, res: Response) => {
     return;
   }
 
-  await lockDeal(dealId, deal.buyerName, deal.buyerPhone, deal.buyerEmail);
+  const lockedDeal = await lockDeal(dealId, deal.buyerName, deal.buyerPhone, deal.buyerEmail);
   logger.info({ dealId, reference }, "Deal locked via Paystack webhook");
+
+  if (lockedDeal) {
+    const [seller] = await db
+      .select({ name: sellersTable.name, email: sellersTable.email })
+      .from(sellersTable)
+      .where(eq(sellersTable.id, lockedDeal.sellerId))
+      .limit(1);
+    if (seller?.email) {
+      const domains = process.env["REPLIT_DOMAINS"] ?? "";
+      const primaryDomain = domains.split(",")[0]?.trim();
+      const dashboardUrl = primaryDomain
+        ? `https://${primaryDomain}/deals/${lockedDeal.id}`
+        : `/deals/${lockedDeal.id}`;
+      notifySellerPaymentReceived({
+        sellerName: seller.name,
+        sellerEmail: seller.email,
+        buyerName: lockedDeal.buyerName ?? "Unknown Buyer",
+        buyerPhone: lockedDeal.buyerPhone ?? "",
+        itemName: lockedDeal.itemName,
+        amount: parseFloat(lockedDeal.price),
+        dealCode: lockedDeal.code,
+        dashboardUrl,
+      }).catch((err) => logger.error({ err }, "Seller notification failed (webhook)"));
+    }
+  }
 });
 
 export default router;

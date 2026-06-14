@@ -16,6 +16,7 @@ import {
   FulfillDealParams,
   FulfillDealBody,
 } from "@workspace/api-zod";
+import { notifySellerPaymentReceived } from "../lib/notify";
 
 const router = Router();
 
@@ -236,6 +237,28 @@ router.post("/deals/:id/pay", async (req, res) => {
     amount: deal.price,
     buyerName: bodyParsed.data.buyerName,
   });
+
+  // Notify seller — non-blocking
+  const [seller] = await db
+    .select({ name: sellersTable.name, email: sellersTable.email })
+    .from(sellersTable)
+    .where(eq(sellersTable.id, deal.sellerId))
+    .limit(1);
+  if (seller?.email) {
+    const proto = (req.headers["x-forwarded-proto"] as string) || req.protocol;
+    const host = (req.headers["x-forwarded-host"] as string) || req.get("host") || "";
+    notifySellerPaymentReceived({
+      sellerName: seller.name,
+      sellerEmail: seller.email,
+      buyerName: bodyParsed.data.buyerName,
+      buyerPhone: bodyParsed.data.buyerPhone,
+      itemName: deal.itemName,
+      amount: parseFloat(deal.price),
+      dealCode: deal.code,
+      dashboardUrl: `${proto}://${host}/deals/${deal.id}`,
+    }).catch((err) => logger.error({ err }, "Seller notification failed (/pay)"));
+  }
+
   res.json(await formatDeal(updated));
 });
 
