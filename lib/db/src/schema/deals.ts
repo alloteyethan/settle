@@ -35,6 +35,8 @@ export const dealsTable = pgTable("deals", {
     .references(() => sellersTable.id),
   buyerPhone: text("buyer_phone"),
   buyerName: text("buyer_name"),
+  buyerEmail: text("buyer_email"),
+  paystackReference: text("paystack_reference"),
   fulfillmentType: fulfillmentTypeEnum("fulfillment_type"),
   sellerConfirmedAt: timestamp("seller_confirmed_at", { withTimezone: true }),
   buyerConfirmedAt: timestamp("buyer_confirmed_at", { withTimezone: true }),

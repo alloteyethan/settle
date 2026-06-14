@@ -26,7 +26,14 @@ app.use(
   }),
 );
 app.use(cors());
-app.use(express.json());
+// Capture raw body for Paystack webhook HMAC-SHA512 verification
+app.use(
+  express.json({
+    verify(req: unknown, _res, buf) {
+      (req as Record<string, unknown>)["rawBody"] = buf;
+    },
+  }),
+);
 app.use(express.urlencoded({ extended: true }));
 
 app.use("/api", router);
