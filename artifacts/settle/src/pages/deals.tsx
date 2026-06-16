@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PlusCircle, Search } from "lucide-react";
-import { DealStatus, ListDealsStatus } from "@workspace/api-client-react/src/generated/api.schemas";
+import type { DealStatus, ListDealsStatus } from "@workspace/api-client-react";
 
 export default function DealsPage() {
   const [statusFilter, setStatusFilter] = useState<ListDealsStatus | "all">("all");

@@ -56,7 +56,7 @@ async function lockDeal(dealId: number, buyerName?: string | null, buyerPhone?: 
 // POST /api/deals/:id/paystack/init
 // Public — buyer initiates payment. Returns Paystack authorization URL.
 router.post("/deals/:id/paystack/init", async (req: Request, res: Response) => {
-  const dealId = parseInt(req.params["id"], 10);
+  const dealId = parseInt(String(req.params["id"]), 10);
   if (isNaN(dealId)) {
     res.status(400).json({ error: "Invalid deal id" });
     return;
@@ -83,8 +83,10 @@ router.post("/deals/:id/paystack/init", async (req: Request, res: Response) => {
   }
 
   // Build callback URL from the incoming request
-  const proto = (req.headers["x-forwarded-proto"] as string) || req.protocol;
-  const host = (req.headers["x-forwarded-host"] as string) || req.get("host") || "";
+  const rawProto0 = req.headers["x-forwarded-proto"];
+  const proto = (Array.isArray(rawProto0) ? rawProto0[0] : rawProto0) ?? req.protocol;
+  const rawHost0 = req.headers["x-forwarded-host"];
+  const host = (Array.isArray(rawHost0) ? rawHost0[0] : rawHost0) ?? req.get("host") ?? "";
   const callbackUrl = `${proto}://${host}/pay/${deal.code}`;
 
   // Amount in pesewas (GHS × 100)
@@ -139,7 +141,7 @@ router.post("/deals/:id/paystack/init", async (req: Request, res: Response) => {
 // GET /api/deals/:id/paystack/verify?reference=xxx
 // Public — called by frontend after Paystack redirects back. Verifies and locks the deal.
 router.get("/deals/:id/paystack/verify", async (req: Request, res: Response) => {
-  const dealId = parseInt(req.params["id"], 10);
+  const dealId = parseInt(String(req.params["id"]), 10);
   const reference = req.query["reference"] as string | undefined;
 
   if (isNaN(dealId) || !reference) {
@@ -204,8 +206,10 @@ router.get("/deals/:id/paystack/verify", async (req: Request, res: Response) => 
 
   // Send seller notification (non-blocking — never delays the response)
   if (seller?.email) {
-    const proto = (req.headers["x-forwarded-proto"] as string) || req.protocol;
-    const host = (req.headers["x-forwarded-host"] as string) || req.get("host") || "";
+    const rawProto = req.headers["x-forwarded-proto"];
+    const proto = (Array.isArray(rawProto) ? rawProto[0] : rawProto) ?? req.protocol;
+    const rawHost = req.headers["x-forwarded-host"];
+    const host = (Array.isArray(rawHost) ? rawHost[0] : rawHost) ?? req.get("host") ?? "";
     notifySellerPaymentReceived({
       sellerName: seller.name,
       sellerEmail: seller.email,

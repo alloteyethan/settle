@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { db, dealsTable, sellersTable, disputesTable, activityTable } from "@workspace/db";
 import { eq, desc, and, sql } from "drizzle-orm";
+import { autoSettleIfOverdue } from "../lib/autoRelease";
 import { requireAuth, type AuthRequest } from "../middlewares/auth";
 import { logger } from "../lib/logger";
 import type { Response } from "express";
@@ -147,19 +148,22 @@ router.get("/deals/:id", requireAuth, async (req: AuthRequest, res: Response) =>
     res.status(400).json({ error: "Invalid id" });
     return;
   }
-  const [deal] = await db.select().from(dealsTable)
+  let [deal] = await db.select().from(dealsTable)
     .where(and(eq(dealsTable.id, parsed.data.id), eq(dealsTable.sellerId, req.sellerId!)))
     .limit(1);
   if (!deal) {
     res.status(404).json({ error: "Deal not found" });
     return;
   }
+  // Lazy auto-release: settle if delivery window has expired and no active dispute
+  const settled = await autoSettleIfOverdue(deal);
+  if (settled) deal = settled;
   res.json(await formatDeal(deal));
 });
 
 // Delete deal (only if created/unpaid)
 router.delete("/deals/:id", requireAuth, async (req: AuthRequest, res: Response) => {
-  const id = parseInt(req.params.id, 10);
+  const id = parseInt(String(req.params.id), 10);
   const [deal] = await db.select().from(dealsTable)
     .where(and(eq(dealsTable.id, id), eq(dealsTable.sellerId, req.sellerId!)))
     .limit(1);
@@ -182,11 +186,15 @@ router.get("/deals/link/:code", async (req, res) => {
     res.status(400).json({ error: "Invalid code" });
     return;
   }
-  const [deal] = await db.select().from(dealsTable).where(eq(dealsTable.code, parsed.data.code)).limit(1);
+  let [deal] = await db.select().from(dealsTable).where(eq(dealsTable.code, parsed.data.code)).limit(1);
   if (!deal) {
     res.status(404).json({ error: "Deal not found" });
     return;
   }
+  // Lazy auto-release: settle if delivery window has expired and no active dispute
+  const settled = await autoSettleIfOverdue(deal);
+  if (settled) deal = settled;
+
   const [seller] = await db.select().from(sellersTable).where(eq(sellersTable.id, deal.sellerId)).limit(1);
   res.json({
     id: deal.id,
@@ -200,6 +208,7 @@ router.get("/deals/link/:code", async (req, res) => {
     sellerName: seller?.name ?? "Seller",
     sellerConfirmedAt: deal.sellerConfirmedAt?.toISOString() ?? null,
     buyerConfirmedAt: deal.buyerConfirmedAt?.toISOString() ?? null,
+    deliveryDeadline: deal.deliveryDeadline?.toISOString() ?? null,
     createdAt: deal.createdAt.toISOString(),
   });
 });
@@ -245,8 +254,10 @@ router.post("/deals/:id/pay", async (req, res) => {
     .where(eq(sellersTable.id, deal.sellerId))
     .limit(1);
   if (seller?.email) {
-    const proto = (req.headers["x-forwarded-proto"] as string) || req.protocol;
-    const host = (req.headers["x-forwarded-host"] as string) || req.get("host") || "";
+    const rawProto = req.headers["x-forwarded-proto"];
+    const proto = (Array.isArray(rawProto) ? rawProto[0] : rawProto) ?? req.protocol;
+    const rawHost = req.headers["x-forwarded-host"];
+    const host = (Array.isArray(rawHost) ? rawHost[0] : rawHost) ?? req.get("host") ?? "";
     notifySellerPaymentReceived({
       sellerName: seller.name,
       sellerEmail: seller.email,

@@ -1,5 +1,6 @@
 import app from "./app";
 import { logger } from "./lib/logger";
+import { autoReleaseOverdueDeals } from "./lib/autoRelease";
 
 const rawPort = process.env["PORT"];
 
@@ -22,4 +23,11 @@ app.listen(port, (err) => {
   }
 
   logger.info({ port }, "Server listening");
+
+  // Auto-release overdue escrow deals: run on startup then every 15 minutes
+  autoReleaseOverdueDeals().catch((e) => logger.error({ err: e }, "Auto-release startup run failed"));
+  const job = setInterval(() => {
+    autoReleaseOverdueDeals().catch((e) => logger.error({ err: e }, "Auto-release job failed"));
+  }, 15 * 60 * 1000);
+  job.unref(); // Don't keep the process alive for this alone
 });

@@ -184,6 +184,23 @@ export default function PayPage() {
             </p>
             <p className="text-lg font-bold">{deal.sellerName}</p>
           </div>
+          {/* Escrow window info — shown before payment */}
+          {(() => {
+            const h = deal.deliveryWindowHours;
+            const typeLabel = h <= 24 ? "Digital Item" : h <= 48 ? "Service" : "Physical Product";
+            const triggerLabel = h <= 48 ? "completion" : "dispatch";
+            return (
+              <div className="bg-blue-50 border-b border-blue-100 px-5 py-3 flex items-start gap-3">
+                <span className="text-lg mt-0.5">{h <= 24 ? "💻" : h <= 48 ? "🛠" : "📦"}</span>
+                <div>
+                  <p className="text-xs font-semibold text-blue-800">{typeLabel} · {h}-hour auto-release</p>
+                  <p className="text-xs text-blue-600 mt-0.5">
+                    Funds release automatically {h}h after seller confirms {triggerLabel} — you can dispute before the timer expires.
+                  </p>
+                </div>
+              </div>
+            );
+          })()}
           <CardContent className="px-6 py-5 space-y-5">
             {/* Item + price */}
             <div className="flex justify-between items-start gap-4 pb-4 border-b">

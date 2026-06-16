@@ -186,6 +186,8 @@ export interface DealPublic {
   sellerConfirmedAt?: string | null;
   /** @nullable */
   buyerConfirmedAt?: string | null;
+  /** @nullable */
+  deliveryDeadline?: string | null;
   createdAt: string;
 }
 

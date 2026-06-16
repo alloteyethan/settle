@@ -15,6 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { CheckCircle2, ShieldAlert, Lock, AlertTriangle, ShieldCheck } from "lucide-react";
 import { TransactionProgress } from "@/components/transaction-progress";
+import { CountdownTimer } from "@/components/countdown-timer";
 import type { DisputeInputReason } from "@workspace/api-client-react";
 
 const FULFILLMENT_LABELS: Record<string, string> = {
@@ -159,6 +160,19 @@ export default function ConfirmPage() {
                   <p className="font-semibold text-amber-900 mt-0.5">
                     {FULFILLMENT_LABELS[deal.fulfillmentType] ?? deal.fulfillmentType}
                   </p>
+                </div>
+              )}
+
+              {/* Auto-release countdown */}
+              {deal.deliveryDeadline && (
+                <div className="bg-amber-50 border border-amber-200 rounded-lg px-4 py-4">
+                  <p className="text-xs font-semibold text-amber-800 uppercase tracking-wide mb-3">
+                    Auto-release countdown
+                  </p>
+                  <CountdownTimer
+                    deadline={deal.deliveryDeadline}
+                    totalHours={deal.deliveryWindowHours}
+                  />
                 </div>
               )}
 

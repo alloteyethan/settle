@@ -248,6 +248,7 @@ export const GetDealByCodeResponse = zod.object({
   "sellerName": zod.string(),
   "sellerConfirmedAt": zod.string().nullish(),
   "buyerConfirmedAt": zod.string().nullish(),
+  "deliveryDeadline": zod.string().nullish(),
   "createdAt": zod.string()
 })
 

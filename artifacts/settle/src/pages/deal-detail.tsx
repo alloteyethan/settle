@@ -27,6 +27,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { TransactionProgress } from "@/components/transaction-progress";
+import { CountdownTimer } from "@/components/countdown-timer";
 
 const FULFILLMENT_OPTIONS = [
   { value: "shipped", label: "Item Shipped", description: "Handed to courier or dispatch rider", Icon: Truck },
@@ -272,13 +273,24 @@ export default function DealDetailPage() {
                   Waiting for Buyer Confirmation
                 </CardTitle>
                 <CardDescription>
-                  You have confirmed fulfillment. The buyer needs to confirm receipt before funds are released.
-                  Funds auto-release after {deal.deliveryWindowHours} hours if the buyer doesn't respond.
+                  You confirmed fulfillment. Funds auto-release when the timer expires if the buyer doesn't respond.
                 </CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="space-y-4">
+                {/* Live countdown */}
+                {deal.deliveryDeadline && (
+                  <div className="bg-white border border-amber-200 rounded-lg px-4 py-4">
+                    <p className="text-xs font-semibold text-amber-700 uppercase tracking-wide mb-3">
+                      Auto-release in
+                    </p>
+                    <CountdownTimer
+                      deadline={deal.deliveryDeadline}
+                      totalHours={deal.deliveryWindowHours}
+                    />
+                  </div>
+                )}
                 <div className="text-sm bg-white rounded-lg border p-3 space-y-1">
-                  <p className="text-muted-foreground">Share this link with your buyer:</p>
+                  <p className="text-muted-foreground">Send this link to your buyer if they haven't confirmed:</p>
                   <a
                     href={buyerLink}
                     className="font-mono text-primary text-xs break-all hover:underline"
