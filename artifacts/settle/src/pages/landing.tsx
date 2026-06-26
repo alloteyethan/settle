@@ -19,8 +19,7 @@ export default function LandingPage() {
           </Link>
         </div>
       </header>
-
-      <main className="flex-1 flex flex-col items-center text-center px-6 pt-24 pb-16">
+      <main className="flex-1 flex flex-col items-center text-center px-6 pt-24 pb-16 bg-[#b8becc87]">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-sm font-medium mb-8">
           <Shield className="w-4 h-4" />
           Secure Escrow for MoMo & Card
