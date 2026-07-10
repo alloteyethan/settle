@@ -1,5 +1,11 @@
 import { Router } from "express";
-import { db, dealsTable, sellersTable, disputesTable, activityTable } from "@workspace/db";
+import {
+  db,
+  dealsTable,
+  sellersTable,
+  disputesTable,
+  activityTable,
+} from "@workspace/db";
 import { eq, desc, and, sql } from "drizzle-orm";
 import { autoSettleIfOverdue } from "../lib/autoRelease";
 import { requireAuth, type AuthRequest } from "../middlewares/auth";
@@ -24,7 +30,8 @@ const router = Router();
 const FEE_RATE = 0.02;
 
 function generateCode(): string {
-  const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+  const chars =
+    "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
   let code = "";
   for (let i = 0; i < 6; i++) {
     code += chars[Math.floor(Math.random() * chars.length)];
@@ -32,7 +39,9 @@ function generateCode(): string {
   return code;
 }
 
-function formatDispute(dispute: typeof disputesTable.$inferSelect | null | undefined) {
+function formatDispute(
+  dispute: typeof disputesTable.$inferSelect | null | undefined,
+) {
   if (!dispute) return undefined;
   return {
     id: dispute.id,
@@ -50,7 +59,11 @@ function formatDispute(dispute: typeof disputesTable.$inferSelect | null | undef
 }
 
 async function formatDeal(deal: typeof dealsTable.$inferSelect) {
-  const dispute = await db.select().from(disputesTable).where(eq(disputesTable.dealId, deal.id)).limit(1);
+  const dispute = await db
+    .select()
+    .from(disputesTable)
+    .where(eq(disputesTable.dealId, deal.id))
+    .limit(1);
   return {
     id: deal.id,
     code: deal.code,
@@ -70,6 +83,7 @@ async function formatDeal(deal: typeof dealsTable.$inferSelect) {
     buyerConfirmedAt: deal.buyerConfirmedAt?.toISOString() ?? null,
     dispatchedAt: deal.dispatchedAt?.toISOString() ?? null,
     deliveryDeadline: deal.deliveryDeadline?.toISOString() ?? null,
+    deliveryCode: deal.deliveryCode ?? null,
     settledAt: deal.settledAt?.toISOString() ?? null,
     dispute: dispute[0] ? formatDispute(dispute[0]) : undefined,
     createdAt: deal.createdAt.toISOString(),
@@ -82,15 +96,25 @@ router.get("/deals", requireAuth, async (req: AuthRequest, res: Response) => {
   const { status, limit = 20, offset = 0 } = parsed.success ? parsed.data : {};
   const conditions = [eq(dealsTable.sellerId, req.sellerId!)];
   if (status) {
-    conditions.push(eq(dealsTable.status, status as typeof dealsTable.$inferSelect["status"]));
+    conditions.push(
+      eq(
+        dealsTable.status,
+        status as (typeof dealsTable.$inferSelect)["status"],
+      ),
+    );
   }
   const [dealsResult, countResult] = await Promise.all([
-    db.select().from(dealsTable)
+    db
+      .select()
+      .from(dealsTable)
       .where(and(...conditions))
       .orderBy(desc(dealsTable.createdAt))
       .limit(limit ?? 20)
       .offset(offset ?? 0),
-    db.select({ count: sql<number>`count(*)` }).from(dealsTable).where(and(...conditions)),
+    db
+      .select({ count: sql<number>`count(*)` })
+      .from(dealsTable)
+      .where(and(...conditions)),
   ]);
   const deals = await Promise.all(dealsResult.map(formatDeal));
   res.json({ deals, total: Number(countResult[0]?.count ?? 0) });
@@ -100,34 +124,48 @@ router.get("/deals", requireAuth, async (req: AuthRequest, res: Response) => {
 router.post("/deals", requireAuth, async (req: AuthRequest, res: Response) => {
   const parsed = CreateDealBody.safeParse(req.body);
   if (!parsed.success) {
-    res.status(400).json({ error: "Validation error", details: parsed.error.issues });
+    res
+      .status(400)
+      .json({ error: "Validation error", details: parsed.error.issues });
     return;
   }
-  const { itemName, description, price, deliveryWindowHours = 48 } = parsed.data;
+  const {
+    itemName,
+    description,
+    price,
+    deliveryWindowHours = 48,
+  } = parsed.data;
   const fee = price * FEE_RATE;
   const payout = price - fee;
 
   let code = generateCode();
   let attempts = 0;
   while (attempts < 5) {
-    const existing = await db.select().from(dealsTable).where(eq(dealsTable.code, code)).limit(1);
+    const existing = await db
+      .select()
+      .from(dealsTable)
+      .where(eq(dealsTable.code, code))
+      .limit(1);
     if (!existing.length) break;
     code = generateCode();
     attempts++;
   }
 
   const shortUrl = `settle.shop/${code}`;
-  const [deal] = await db.insert(dealsTable).values({
-    code,
-    shortUrl,
-    itemName,
-    description,
-    price: price.toString(),
-    feeAmount: fee.toFixed(2),
-    sellerPayout: payout.toFixed(2),
-    deliveryWindowHours,
-    sellerId: req.sellerId!,
-  }).returning();
+  const [deal] = await db
+    .insert(dealsTable)
+    .values({
+      code,
+      shortUrl,
+      itemName,
+      description,
+      price: price.toString(),
+      feeAmount: fee.toFixed(2),
+      sellerPayout: payout.toFixed(2),
+      deliveryWindowHours,
+      sellerId: req.sellerId!,
+    })
+    .returning();
 
   await db.insert(activityTable).values({
     sellerId: req.sellerId!,
@@ -142,42 +180,61 @@ router.post("/deals", requireAuth, async (req: AuthRequest, res: Response) => {
 });
 
 // Get deal by ID
-router.get("/deals/:id", requireAuth, async (req: AuthRequest, res: Response) => {
-  const parsed = GetDealParams.safeParse(req.params);
-  if (!parsed.success) {
-    res.status(400).json({ error: "Invalid id" });
-    return;
-  }
-  let [deal] = await db.select().from(dealsTable)
-    .where(and(eq(dealsTable.id, parsed.data.id), eq(dealsTable.sellerId, req.sellerId!)))
-    .limit(1);
-  if (!deal) {
-    res.status(404).json({ error: "Deal not found" });
-    return;
-  }
-  // Lazy auto-release: settle if delivery window has expired and no active dispute
-  const settled = await autoSettleIfOverdue(deal);
-  if (settled) deal = settled;
-  res.json(await formatDeal(deal));
-});
+router.get(
+  "/deals/:id",
+  requireAuth,
+  async (req: AuthRequest, res: Response) => {
+    const parsed = GetDealParams.safeParse(req.params);
+    if (!parsed.success) {
+      res.status(400).json({ error: "Invalid id" });
+      return;
+    }
+    let [deal] = await db
+      .select()
+      .from(dealsTable)
+      .where(
+        and(
+          eq(dealsTable.id, parsed.data.id),
+          eq(dealsTable.sellerId, req.sellerId!),
+        ),
+      )
+      .limit(1);
+    if (!deal) {
+      res.status(404).json({ error: "Deal not found" });
+      return;
+    }
+    // Lazy auto-release: settle if delivery window has expired and no active dispute
+    const settled = await autoSettleIfOverdue(deal);
+    if (settled) deal = settled;
+    res.json(await formatDeal(deal));
+  },
+);
 
 // Delete deal (only if created/unpaid)
-router.delete("/deals/:id", requireAuth, async (req: AuthRequest, res: Response) => {
-  const id = parseInt(String(req.params.id), 10);
-  const [deal] = await db.select().from(dealsTable)
-    .where(and(eq(dealsTable.id, id), eq(dealsTable.sellerId, req.sellerId!)))
-    .limit(1);
-  if (!deal) {
-    res.status(404).json({ error: "Deal not found" });
-    return;
-  }
-  if (deal.status !== "created") {
-    res.status(400).json({ error: "Cannot delete a deal that has been paid" });
-    return;
-  }
-  await db.delete(dealsTable).where(eq(dealsTable.id, id));
-  res.status(204).send();
-});
+router.delete(
+  "/deals/:id",
+  requireAuth,
+  async (req: AuthRequest, res: Response) => {
+    const id = parseInt(String(req.params.id), 10);
+    const [deal] = await db
+      .select()
+      .from(dealsTable)
+      .where(and(eq(dealsTable.id, id), eq(dealsTable.sellerId, req.sellerId!)))
+      .limit(1);
+    if (!deal) {
+      res.status(404).json({ error: "Deal not found" });
+      return;
+    }
+    if (deal.status !== "created") {
+      res
+        .status(400)
+        .json({ error: "Cannot delete a deal that has been paid" });
+      return;
+    }
+    await db.delete(dealsTable).where(eq(dealsTable.id, id));
+    res.status(204).send();
+  },
+);
 
 // Get deal by code (public — buyer portal)
 router.get("/deals/link/:code", async (req, res) => {
@@ -186,7 +243,11 @@ router.get("/deals/link/:code", async (req, res) => {
     res.status(400).json({ error: "Invalid code" });
     return;
   }
-  let [deal] = await db.select().from(dealsTable).where(eq(dealsTable.code, parsed.data.code)).limit(1);
+  let [deal] = await db
+    .select()
+    .from(dealsTable)
+    .where(eq(dealsTable.code, parsed.data.code))
+    .limit(1);
   if (!deal) {
     res.status(404).json({ error: "Deal not found" });
     return;
@@ -194,8 +255,22 @@ router.get("/deals/link/:code", async (req, res) => {
   // Lazy auto-release: settle if delivery window has expired and no active dispute
   const settled = await autoSettleIfOverdue(deal);
   if (settled) deal = settled;
+  if (deal.status === "locked" && !deal.deliveryCode) {
+    const [updatedDeal] = await db
+      .update(dealsTable)
+      .set({
+        deliveryCode: Math.floor(1000 + Math.random() * 9000).toString(),
+      })
+      .where(eq(dealsTable.id, deal.id))
+      .returning();
 
-  const [seller] = await db.select().from(sellersTable).where(eq(sellersTable.id, deal.sellerId)).limit(1);
+    if (updatedDeal) deal = updatedDeal;
+  }
+  const [seller] = await db
+    .select()
+    .from(sellersTable)
+    .where(eq(sellersTable.id, deal.sellerId))
+    .limit(1);
   res.json({
     id: deal.id,
     code: deal.code,
@@ -209,6 +284,7 @@ router.get("/deals/link/:code", async (req, res) => {
     sellerConfirmedAt: deal.sellerConfirmedAt?.toISOString() ?? null,
     buyerConfirmedAt: deal.buyerConfirmedAt?.toISOString() ?? null,
     deliveryDeadline: deal.deliveryDeadline?.toISOString() ?? null,
+    deliveryCode: deal.deliveryCode ?? null,
     createdAt: deal.createdAt.toISOString(),
   });
 });
@@ -222,10 +298,16 @@ router.post("/deals/:id/pay", async (req, res) => {
   }
   const bodyParsed = InitiatePaymentBody.safeParse(req.body);
   if (!bodyParsed.success) {
-    res.status(400).json({ error: "Validation error", details: bodyParsed.error.issues });
+    res
+      .status(400)
+      .json({ error: "Validation error", details: bodyParsed.error.issues });
     return;
   }
-  const [deal] = await db.select().from(dealsTable).where(eq(dealsTable.id, parsed.data.id)).limit(1);
+  const [deal] = await db
+    .select()
+    .from(dealsTable)
+    .where(eq(dealsTable.id, parsed.data.id))
+    .limit(1);
   if (!deal) {
     res.status(404).json({ error: "Deal not found" });
     return;
@@ -234,8 +316,14 @@ router.post("/deals/:id/pay", async (req, res) => {
     res.status(400).json({ error: "Deal has already been paid" });
     return;
   }
-  const [updated] = await db.update(dealsTable)
-    .set({ status: "locked", buyerName: bodyParsed.data.buyerName, buyerPhone: bodyParsed.data.buyerPhone })
+  const [updated] = await db
+    .update(dealsTable)
+    .set({
+      status: "locked",
+      buyerName: bodyParsed.data.buyerName,
+      buyerPhone: bodyParsed.data.buyerPhone,
+      deliveryCode: Math.floor(1000 + Math.random() * 9000).toString(),
+    })
     .where(eq(dealsTable.id, deal.id))
     .returning();
   await db.insert(activityTable).values({
@@ -255,9 +343,11 @@ router.post("/deals/:id/pay", async (req, res) => {
     .limit(1);
   if (seller?.email) {
     const rawProto = req.headers["x-forwarded-proto"];
-    const proto = (Array.isArray(rawProto) ? rawProto[0] : rawProto) ?? req.protocol;
+    const proto =
+      (Array.isArray(rawProto) ? rawProto[0] : rawProto) ?? req.protocol;
     const rawHost = req.headers["x-forwarded-host"];
-    const host = (Array.isArray(rawHost) ? rawHost[0] : rawHost) ?? req.get("host") ?? "";
+    const host =
+      (Array.isArray(rawHost) ? rawHost[0] : rawHost) ?? req.get("host") ?? "";
     notifySellerPaymentReceived({
       sellerName: seller.name,
       sellerEmail: seller.email,
@@ -267,7 +357,9 @@ router.post("/deals/:id/pay", async (req, res) => {
       amount: parseFloat(deal.price),
       dealCode: deal.code,
       dashboardUrl: `${proto}://${host}/deals/${deal.id}`,
-    }).catch((err) => logger.error({ err }, "Seller notification failed (/pay)"));
+    }).catch((err) =>
+      logger.error({ err }, "Seller notification failed (/pay)"),
+    );
   }
 
   res.json(await formatDeal(updated));
@@ -275,94 +367,141 @@ router.post("/deals/:id/pay", async (req, res) => {
 
 // Seller confirms fulfillment — IRREVERSIBLE
 // Only allowed when status === 'locked'. Once called, status moves to 'dispatched' and cannot be undone.
-router.post("/deals/:id/fulfill", requireAuth, async (req: AuthRequest, res: Response) => {
-  const parsed = FulfillDealParams.safeParse(req.params);
-  if (!parsed.success) {
-    res.status(400).json({ error: "Invalid id" });
-    return;
-  }
-  const bodyParsed = FulfillDealBody.safeParse(req.body);
-  if (!bodyParsed.success) {
-    res.status(400).json({ error: "Validation error", details: bodyParsed.error.issues });
-    return;
-  }
-  const [deal] = await db.select().from(dealsTable)
-    .where(and(eq(dealsTable.id, parsed.data.id), eq(dealsTable.sellerId, req.sellerId!)))
-    .limit(1);
-  if (!deal) {
-    res.status(404).json({ error: "Deal not found" });
-    return;
-  }
-  if (deal.status !== "locked") {
-    res.status(400).json({
-      error: deal.status === "created"
-        ? "Buyer has not paid yet"
-        : "Fulfillment has already been confirmed and cannot be changed",
+router.post(
+  "/deals/:id/fulfill",
+  requireAuth,
+  async (req: AuthRequest, res: Response) => {
+    const parsed = FulfillDealParams.safeParse(req.params);
+    if (!parsed.success) {
+      res.status(400).json({ error: "Invalid id" });
+      return;
+    }
+    const bodyParsed = FulfillDealBody.safeParse(req.body);
+    if (!bodyParsed.success) {
+      res
+        .status(400)
+        .json({ error: "Validation error", details: bodyParsed.error.issues });
+      return;
+    }
+    const [deal] = await db
+      .select()
+      .from(dealsTable)
+      .where(
+        and(
+          eq(dealsTable.id, parsed.data.id),
+          eq(dealsTable.sellerId, req.sellerId!),
+        ),
+      )
+      .limit(1);
+    if (!deal) {
+      res.status(404).json({ error: "Deal not found" });
+      return;
+    }
+    if (deal.status !== "locked") {
+      res.status(400).json({
+        error:
+          deal.status === "created"
+            ? "Buyer has not paid yet"
+            : "Fulfillment has already been confirmed and cannot be changed",
+      });
+      return;
+    }
+    const submittedDeliveryCode = String((req.body as { deliveryCode?: string }).deliveryCode ?? "").trim();
+
+    if (!deal.deliveryCode || submittedDeliveryCode !== deal.deliveryCode) {
+      res.status(400).json({ error: "Invalid buyer confirmation code" });
+      return;
+    }
+    const now = new Date();
+    const deliveryDeadline = new Date(
+      now.getTime() + deal.deliveryWindowHours * 60 * 60 * 1000,
+    );
+
+    const [updated] = await db
+      .update(dealsTable)
+      .set({
+        status: "dispatched",
+        fulfillmentType: bodyParsed.data
+          .fulfillmentType as (typeof dealsTable.$inferSelect)["fulfillmentType"],
+        sellerConfirmedAt: now,
+        dispatchedAt: now,
+        deliveryDeadline,
+      })
+      .where(eq(dealsTable.id, deal.id))
+      .returning();
+
+    await db.insert(activityTable).values({
+      sellerId: deal.sellerId,
+      dealId: deal.id,
+      type: "dispatched",
+      itemName: deal.itemName,
+      amount: deal.price,
+      buyerName: deal.buyerName,
     });
-    return;
-  }
 
-  const now = new Date();
-  const deliveryDeadline = new Date(now.getTime() + deal.deliveryWindowHours * 60 * 60 * 1000);
-
-  const [updated] = await db.update(dealsTable)
-    .set({
-      status: "dispatched",
-      fulfillmentType: bodyParsed.data.fulfillmentType as typeof dealsTable.$inferSelect["fulfillmentType"],
-      sellerConfirmedAt: now,
-      dispatchedAt: now,
-      deliveryDeadline,
-    })
-    .where(eq(dealsTable.id, deal.id))
-    .returning();
-
-  await db.insert(activityTable).values({
-    sellerId: deal.sellerId,
-    dealId: deal.id,
-    type: "dispatched",
-    itemName: deal.itemName,
-    amount: deal.price,
-    buyerName: deal.buyerName,
-  });
-
-  logger.info({ dealId: deal.id, fulfillmentType: bodyParsed.data.fulfillmentType }, "Deal fulfilled by seller");
-  res.json(await formatDeal(updated));
-});
+    logger.info(
+      { dealId: deal.id, fulfillmentType: bodyParsed.data.fulfillmentType },
+      "Deal fulfilled by seller",
+    );
+    res.json(await formatDeal(updated));
+  },
+);
 
 // Seller marks as dispatched (legacy — delegates to fulfill)
-router.post("/deals/:id/dispatch", requireAuth, async (req: AuthRequest, res: Response) => {
-  const parsed = MarkDispatchedParams.safeParse(req.params);
-  if (!parsed.success) {
-    res.status(400).json({ error: "Invalid id" });
-    return;
-  }
-  const [deal] = await db.select().from(dealsTable)
-    .where(and(eq(dealsTable.id, parsed.data.id), eq(dealsTable.sellerId, req.sellerId!)))
-    .limit(1);
-  if (!deal) {
-    res.status(404).json({ error: "Deal not found" });
-    return;
-  }
-  if (deal.status !== "locked") {
-    res.status(400).json({ error: "Deal must be locked/paid before dispatching" });
-    return;
-  }
-  const now = new Date();
-  const deliveryDeadline = new Date(now.getTime() + deal.deliveryWindowHours * 60 * 60 * 1000);
-  const [updated] = await db.update(dealsTable)
-    .set({ status: "dispatched", sellerConfirmedAt: now, dispatchedAt: now, deliveryDeadline })
-    .where(eq(dealsTable.id, deal.id))
-    .returning();
-  await db.insert(activityTable).values({
-    sellerId: deal.sellerId,
-    dealId: deal.id,
-    type: "dispatched",
-    itemName: deal.itemName,
-    amount: deal.price,
-    buyerName: deal.buyerName,
-  });
-  res.json(await formatDeal(updated));
-});
+router.post(
+  "/deals/:id/dispatch",
+  requireAuth,
+  async (req: AuthRequest, res: Response) => {
+    const parsed = MarkDispatchedParams.safeParse(req.params);
+    if (!parsed.success) {
+      res.status(400).json({ error: "Invalid id" });
+      return;
+    }
+    const [deal] = await db
+      .select()
+      .from(dealsTable)
+      .where(
+        and(
+          eq(dealsTable.id, parsed.data.id),
+          eq(dealsTable.sellerId, req.sellerId!),
+        ),
+      )
+      .limit(1);
+    if (!deal) {
+      res.status(404).json({ error: "Deal not found" });
+      return;
+    }
+    if (deal.status !== "locked") {
+      res
+        .status(400)
+        .json({ error: "Deal must be locked/paid before dispatching" });
+      return;
+    }
+    const now = new Date();
+    const deliveryDeadline = new Date(
+      now.getTime() + deal.deliveryWindowHours * 60 * 60 * 1000,
+    );
+    const [updated] = await db
+      .update(dealsTable)
+      .set({
+        status: "dispatched",
+        sellerConfirmedAt: now,
+        dispatchedAt: now,
+        deliveryDeadline,
+      })
+      .where(eq(dealsTable.id, deal.id))
+      .returning();
+    await db.insert(activityTable).values({
+      sellerId: deal.sellerId,
+      dealId: deal.id,
+      type: "dispatched",
+      itemName: deal.itemName,
+      amount: deal.price,
+      buyerName: deal.buyerName,
+    });
+    res.json(await formatDeal(updated));
+  },
+);
 
 // Buyer confirms delivery — IRREVERSIBLE
 // Only allowed when status === 'dispatched'. Moves to 'settled' and cannot be undone without a dispute.
@@ -372,28 +511,37 @@ router.post("/deals/:id/confirm", async (req, res) => {
     res.status(400).json({ error: "Invalid id" });
     return;
   }
-  const [deal] = await db.select().from(dealsTable).where(eq(dealsTable.id, parsed.data.id)).limit(1);
+  const [deal] = await db
+    .select()
+    .from(dealsTable)
+    .where(eq(dealsTable.id, parsed.data.id))
+    .limit(1);
   if (!deal) {
     res.status(404).json({ error: "Deal not found" });
     return;
   }
   if (deal.status !== "dispatched") {
     res.status(400).json({
-      error: deal.status === "settled"
-        ? "Delivery has already been confirmed and cannot be changed"
-        : "Seller has not confirmed fulfillment yet",
+      error:
+        deal.status === "settled"
+          ? "Delivery has already been confirmed and cannot be changed"
+          : "Seller has not confirmed fulfillment yet",
     });
     return;
   }
 
   const now = new Date();
-  const [updated] = await db.update(dealsTable)
+  const [updated] = await db
+    .update(dealsTable)
     .set({ status: "settled", buyerConfirmedAt: now, settledAt: now })
     .where(eq(dealsTable.id, deal.id))
     .returning();
 
-  await db.update(sellersTable)
-    .set({ totalEarnings: sql`${sellersTable.totalEarnings} + ${deal.sellerPayout}` })
+  await db
+    .update(sellersTable)
+    .set({
+      totalEarnings: sql`${sellersTable.totalEarnings} + ${deal.sellerPayout}`,
+    })
     .where(eq(sellersTable.id, deal.sellerId));
 
   await db.insert(activityTable).values({
@@ -405,7 +553,10 @@ router.post("/deals/:id/confirm", async (req, res) => {
     buyerName: deal.buyerName,
   });
 
-  logger.info({ dealId: deal.id }, "Delivery confirmed by buyer — deal settled");
+  logger.info(
+    { dealId: deal.id },
+    "Delivery confirmed by buyer — deal settled",
+  );
   res.json(await formatDeal(updated));
 });
 

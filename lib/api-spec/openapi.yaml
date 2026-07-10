@@ -551,6 +551,8 @@ components:
           type: ["string", "null"]
         deliveryDeadline:
           type: ["string", "null"]
+        deliveryCode:
+          type: ["string", "null"]
         settledAt:
           type: ["string", "null"]
         dispute:
@@ -588,6 +590,8 @@ components:
           type: ["string", "null"]
         deliveryDeadline:
           type: ["string", "null"]
+        deliveryCode:
+          type: ["string", "null"]
         createdAt:
           type: string
 
@@ -618,11 +622,13 @@ components:
 
     FulfillInput:
       type: object
-      required: [fulfillmentType]
+      required: [fulfillmentType, deliveryCode]
       properties:
         fulfillmentType:
           type: string
           enum: [shipped, delivered, service_completed, digital_sent]
+        deliveryCode:
+          type: string
 
     PaymentInput:
       type: object

@@ -130,6 +130,8 @@ export interface Deal {
   /** @nullable */
   deliveryDeadline?: string | null;
   /** @nullable */
+  deliveryCode?: string | null;
+  /** @nullable */
   settledAt?: string | null;
   dispute?: Dispute;
   createdAt: string;
@@ -188,6 +190,8 @@ export interface DealPublic {
   buyerConfirmedAt?: string | null;
   /** @nullable */
   deliveryDeadline?: string | null;
+  /** @nullable */
+  deliveryCode?: string | null;
   createdAt: string;
 }
 
@@ -215,6 +219,7 @@ export const FulfillInputFulfillmentType = {
 
 export interface FulfillInput {
   fulfillmentType: FulfillInputFulfillmentType;
+  deliveryCode: string;
 }
 
 export type PaymentInputPaymentMethod = typeof PaymentInputPaymentMethod[keyof typeof PaymentInputPaymentMethod];

@@ -37,6 +37,8 @@ export interface Deal {
   /** @nullable */
   deliveryDeadline?: string | null;
   /** @nullable */
+  deliveryCode?: string | null;
+  /** @nullable */
   settledAt?: string | null;
   dispute?: Dispute;
   createdAt: string;

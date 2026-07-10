@@ -9,4 +9,5 @@ import type { FulfillInputFulfillmentType } from './fulfillInputFulfillmentType'
 
 export interface FulfillInput {
   fulfillmentType: FulfillInputFulfillmentType;
+  deliveryCode: string;
 }

@@ -66,7 +66,11 @@ export default function DealDetailPage() {
   const queryClient = useQueryClient();
 
   const { data: deal, isLoading } = useGetDeal(dealId, {
-    query: { enabled: !!dealId, queryKey: getGetDealQueryKey(dealId) },
+    query: {
+      enabled: !!dealId,
+      queryKey: getGetDealQueryKey(dealId),
+      refetchInterval: 5000,
+    },
   });
 
   const fulfillDeal = useFulfillDeal();
@@ -77,7 +81,7 @@ export default function DealDetailPage() {
   const [proofDesc, setProofDesc] = useState("");
   const [proofUrl, setProofUrl] = useState("");
   const [fulfillError, setFulfillError] = useState<string | null>(null);
-
+  const [deliveryCode, setDeliveryCode] = useState("");
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-64">
@@ -90,7 +94,7 @@ export default function DealDetailPage() {
   const handleFulfill = () => {
     setFulfillError(null);
     fulfillDeal.mutate(
-      { id: dealId, data: { fulfillmentType: selectedFulfillment as any } },
+      { id: dealId, data: { fulfillmentType: selectedFulfillment as any, deliveryCode } },
       {
         onSuccess: () => {
           queryClient.invalidateQueries({ queryKey: getGetDealQueryKey(dealId) });
@@ -138,7 +142,12 @@ export default function DealDetailPage() {
             {deal.buyerName && <> · Buyer: <span className="font-medium text-foreground">{deal.buyerName}</span></>}
           </p>
         </div>
-        <StatusBadge status={deal.status} />
+        <div className="text-right space-y-1">
+          <StatusBadge status={deal.status} />
+          <p className="text-xs text-muted-foreground">
+            Debug status: {deal.status}
+          </p>
+        </div>
       </div>
 
       <div className="grid md:grid-cols-3 gap-6">
@@ -242,6 +251,16 @@ export default function DealDetailPage() {
                   <p className="text-sm text-destructive">{fulfillError}</p>
                 )}
 
+                <div className="space-y-2">
+                  <Label>Buyer confirmation code</Label>
+                  <Input
+                    inputMode="numeric"
+                    maxLength={4}
+                    placeholder="Enter 4-digit code from buyer"
+                    value={deliveryCode}
+                    onChange={(e) => setDeliveryCode(e.target.value.replace(/\D/g, "").slice(0, 4))}
+                  />
+                </div>
                 <div className="flex flex-col sm:flex-row gap-3 pt-2">
                   <Button
                     className="flex-1"
@@ -382,7 +401,7 @@ export default function DealDetailPage() {
                       </Button>
                     </div>
                   </div>
-                ) : (
+                ) : ( 
                   <div className="bg-muted rounded-lg p-3 text-sm text-muted-foreground">
                     Counter proof submitted. An admin will review and resolve shortly.
                   </div>

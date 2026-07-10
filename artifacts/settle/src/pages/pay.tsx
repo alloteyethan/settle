@@ -1,6 +1,7 @@
 import { useParams, useLocation } from "wouter";
 import { useGetDealByCode, getGetDealByCodeQueryKey } from "@workspace/api-client-react";
 import { useState, useEffect } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,7 +11,7 @@ import { Lock, ShieldCheck, CheckCircle2, AlertCircle, Loader2 } from "lucide-re
 export default function PayPage() {
   const { code } = useParams<{ code: string }>();
   const [, setLocation] = useLocation();
-
+  const queryClient = useQueryClient();
   const { data: deal, isLoading } = useGetDealByCode(code || "", {
     query: { enabled: !!code, queryKey: getGetDealByCodeQueryKey(code || "") },
   });
@@ -35,12 +36,16 @@ export default function PayPage() {
 
     fetch(`/api/deals/${deal.id}/paystack/verify?reference=${encodeURIComponent(reference)}`)
       .then((r) => r.json())
-      .then((data: { status?: string; error?: string }) => {
-        if (data.status === "success") {
-          setVerifyState("success");
-          // Redirect to confirm page after short delay
-          setTimeout(() => setLocation(`/confirm/${code}`), 2000);
-        } else {
+     .then(async (data: { status?: string; error?: string }) => {
+       if (data.status === "success") {
+         await queryClient.invalidateQueries({
+           queryKey: getGetDealByCodeQueryKey(code || ""),
+         });
+
+         setVerifyState("success");
+         // Redirect to confirm page after short delay
+         setTimeout(() => setLocation(`/confirm/${code}`), 2000);
+       } else {
           setVerifyState("failed");
           setVerifyError(data.error || "Payment verification failed.");
         }

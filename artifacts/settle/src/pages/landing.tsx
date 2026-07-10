@@ -47,9 +47,9 @@ export default function LandingPage() {
             <h3 className="text-xl font-semibold mb-2">Create a Deal</h3>
             <p className="text-muted-foreground">Enter the item details and price. Generate a secure payment link instantly.</p>
           </div>
-          <div className="bg-card p-6 rounded-xl border shadow-sm">
+          <div className="bg-card p-6 rounded-xl border shadow-sm opacity-[1]">
             <div className="w-12 h-12 bg-primary/10 text-primary rounded-lg flex items-center justify-center mb-4 text-xl font-bold">2</div>
-            <h3 className="text-xl font-semibold mb-2">Buyer Pays</h3>
+            <h3 className="text-xl font-semibold mb-2 opacity-[1]">Buyer Pays</h3>
             <p className="text-muted-foreground">Buyer pays via MoMo or Card. Funds are locked in escrow. You ship the item with confidence.</p>
           </div>
           <div className="bg-card p-6 rounded-xl border shadow-sm">

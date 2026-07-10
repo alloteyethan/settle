@@ -93,6 +93,7 @@ export const GetSellerDashboardResponse = zod.object({
   "buyerConfirmedAt": zod.string().nullish(),
   "dispatchedAt": zod.string().nullish(),
   "deliveryDeadline": zod.string().nullish(),
+  "deliveryCode": zod.string().nullish(),
   "settledAt": zod.string().nullish(),
   "dispute": zod.object({
   "id": zod.number(),
@@ -144,6 +145,7 @@ export const ListDealsResponse = zod.object({
   "buyerConfirmedAt": zod.string().nullish(),
   "dispatchedAt": zod.string().nullish(),
   "deliveryDeadline": zod.string().nullish(),
+  "deliveryCode": zod.string().nullish(),
   "settledAt": zod.string().nullish(),
   "dispute": zod.object({
   "id": zod.number(),
@@ -203,6 +205,7 @@ export const GetDealResponse = zod.object({
   "buyerConfirmedAt": zod.string().nullish(),
   "dispatchedAt": zod.string().nullish(),
   "deliveryDeadline": zod.string().nullish(),
+  "deliveryCode": zod.string().nullish(),
   "settledAt": zod.string().nullish(),
   "dispute": zod.object({
   "id": zod.number(),
@@ -249,6 +252,7 @@ export const GetDealByCodeResponse = zod.object({
   "sellerConfirmedAt": zod.string().nullish(),
   "buyerConfirmedAt": zod.string().nullish(),
   "deliveryDeadline": zod.string().nullish(),
+  "deliveryCode": zod.string().nullish(),
   "createdAt": zod.string()
 })
 
@@ -287,6 +291,7 @@ export const InitiatePaymentResponse = zod.object({
   "buyerConfirmedAt": zod.string().nullish(),
   "dispatchedAt": zod.string().nullish(),
   "deliveryDeadline": zod.string().nullish(),
+  "deliveryCode": zod.string().nullish(),
   "settledAt": zod.string().nullish(),
   "dispute": zod.object({
   "id": zod.number(),
@@ -313,7 +318,8 @@ export const FulfillDealParams = zod.object({
 })
 
 export const FulfillDealBody = zod.object({
-  "fulfillmentType": zod.enum(['shipped', 'delivered', 'service_completed', 'digital_sent'])
+  "fulfillmentType": zod.enum(['shipped', 'delivered', 'service_completed', 'digital_sent']),
+  "deliveryCode": zod.string()
 })
 
 export const FulfillDealResponse = zod.object({
@@ -335,6 +341,7 @@ export const FulfillDealResponse = zod.object({
   "buyerConfirmedAt": zod.string().nullish(),
   "dispatchedAt": zod.string().nullish(),
   "deliveryDeadline": zod.string().nullish(),
+  "deliveryCode": zod.string().nullish(),
   "settledAt": zod.string().nullish(),
   "dispute": zod.object({
   "id": zod.number(),
@@ -379,6 +386,7 @@ export const MarkDispatchedResponse = zod.object({
   "buyerConfirmedAt": zod.string().nullish(),
   "dispatchedAt": zod.string().nullish(),
   "deliveryDeadline": zod.string().nullish(),
+  "deliveryCode": zod.string().nullish(),
   "settledAt": zod.string().nullish(),
   "dispute": zod.object({
   "id": zod.number(),
@@ -423,6 +431,7 @@ export const ConfirmDeliveryResponse = zod.object({
   "buyerConfirmedAt": zod.string().nullish(),
   "dispatchedAt": zod.string().nullish(),
   "deliveryDeadline": zod.string().nullish(),
+  "deliveryCode": zod.string().nullish(),
   "settledAt": zod.string().nullish(),
   "dispute": zod.object({
   "id": zod.number(),
@@ -481,6 +490,7 @@ export const IssueRefundResponse = zod.object({
   "buyerConfirmedAt": zod.string().nullish(),
   "dispatchedAt": zod.string().nullish(),
   "deliveryDeadline": zod.string().nullish(),
+  "deliveryCode": zod.string().nullish(),
   "settledAt": zod.string().nullish(),
   "dispute": zod.object({
   "id": zod.number(),
@@ -572,6 +582,7 @@ export const ListAdminDisputesResponseItem = zod.object({
   "buyerConfirmedAt": zod.string().nullish(),
   "dispatchedAt": zod.string().nullish(),
   "deliveryDeadline": zod.string().nullish(),
+  "deliveryCode": zod.string().nullish(),
   "settledAt": zod.string().nullish(),
   "dispute": zod.object({
   "id": zod.number(),

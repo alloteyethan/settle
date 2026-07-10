@@ -42,6 +42,7 @@ export const dealsTable = pgTable("deals", {
   buyerConfirmedAt: timestamp("buyer_confirmed_at", { withTimezone: true }),
   dispatchedAt: timestamp("dispatched_at", { withTimezone: true }),
   deliveryDeadline: timestamp("delivery_deadline", { withTimezone: true }),
+  deliveryCode: text("delivery_code"),
   settledAt: timestamp("settled_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });

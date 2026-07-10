@@ -26,5 +26,7 @@ export interface DealPublic {
   buyerConfirmedAt?: string | null;
   /** @nullable */
   deliveryDeadline?: string | null;
+  /** @nullable */
+  deliveryCode?: string | null;
   createdAt: string;
 }

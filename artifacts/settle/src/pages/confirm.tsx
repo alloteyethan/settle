@@ -30,7 +30,11 @@ export default function ConfirmPage() {
   const queryClient = useQueryClient();
 
   const { data: deal, isLoading } = useGetDealByCode(code || "", {
-    query: { enabled: !!code, queryKey: getGetDealByCodeQueryKey(code || "") },
+    query: {
+      enabled: !!code,
+      queryKey: getGetDealByCodeQueryKey(code || ""),
+      refetchInterval: 5000,
+    },
   });
 
   const confirmMutation = useConfirmDelivery();
@@ -55,7 +59,7 @@ export default function ConfirmPage() {
       </div>
     );
   }
-
+  const buyerDeliveryCode = (deal as { deliveryCode?: string | null }).deliveryCode || "Code not generated yet";
   const handleConfirm = () => {
     confirmMutation.mutate(
       { id: deal.id },
@@ -90,7 +94,7 @@ export default function ConfirmPage() {
           </div>
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-100 text-emerald-800 text-xs font-medium">
             <ShieldCheck className="w-3.5 h-3.5" />
-            Funds held in secure partner escrow
+                Funds held in secure partner escrow
           </div>
         </div>
 
@@ -144,8 +148,19 @@ export default function ConfirmPage() {
               <Lock className="w-10 h-10 text-blue-400 mx-auto" />
               <p className="font-semibold">Funds Secured</p>
               <p className="text-sm text-muted-foreground">
-                Your payment is locked in escrow. Waiting for the seller to confirm fulfillment.
-              </p>
+          Your payment is locked in escrow. Waiting for the seller to confirm fulfillment.
+                </p>
+                <div className="mt-4 bg-emerald-50 border border-emerald-200 rounded-lg px-4 py-3">
+                  <p className="text-xs text-emerald-700 font-semibold uppercase tracking-wide">
+                    Your seller confirmation code
+                  </p>
+                  <p className="text-3xl font-bold tracking-widest text-emerald-900 mt-1">
+                    {buyerDeliveryCode}
+                  </p>
+                  <p className="text-xs text-emerald-700 mt-2">
+                    Give this code to the seller only after you receive the item or service.
+                  </p>
+                </div>
             </CardContent>
           </Card>
         )}

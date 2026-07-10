@@ -38,7 +38,13 @@ async function paystackGet(path: string) {
 async function lockDeal(dealId: number, buyerName?: string | null, buyerPhone?: string | null, buyerEmail?: string | null) {
   const [updated] = await db
     .update(dealsTable)
-    .set({ status: "locked", buyerName, buyerPhone, buyerEmail })
+    .set({
+      status: "locked",
+      buyerName,
+      buyerPhone,
+      buyerEmail,
+      deliveryCode: Math.floor(1000 + Math.random() * 9000).toString(),
+    })
     .where(and(eq(dealsTable.id, dealId), eq(dealsTable.status, "created")))
     .returning();
   if (!updated) return null;

@@ -40,7 +40,7 @@ function formatTime(iso?: string | null) {
     minute: "2-digit",
   });
 }
-
+{/* Progress Tracker */}
 export function TransactionProgress({
   status,
   fulfillmentType,
@@ -58,8 +58,8 @@ export function TransactionProgress({
     {
       id: "payment",
       label: "Payment Received",
-      sublabel: paymentReceived ? "Funds locked in escrow" : "Waiting for buyer payment",
-      timestamp: paymentReceived ? formatTime(createdAt) : null,
+      sublabel: "Funds locked in escrow",
+      timestamp: formatTime(createdAt),
       complete: paymentReceived,
       active: !paymentReceived,
       disputed: false,
