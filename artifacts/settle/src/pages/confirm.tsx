@@ -33,7 +33,7 @@ export default function ConfirmPage() {
     query: {
       enabled: !!code,
       queryKey: getGetDealByCodeQueryKey(code || ""),
-      refetchInterval: 5000,
+      refetchInterval: 30000,
     },
   });
 

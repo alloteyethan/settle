@@ -23,7 +23,7 @@ import {
   FulfillDealParams,
   FulfillDealBody,
 } from "@workspace/api-zod";
-import { notifySellerPaymentReceived } from "../lib/notify";
+import { notifySellerPaymentReceived, notifyBuyerDeliveryCode } from "../lib/notify";
 
 const router = Router();
 
@@ -335,19 +335,21 @@ router.post("/deals/:id/pay", async (req, res) => {
     buyerName: bodyParsed.data.buyerName,
   });
 
-  // Notify seller — non-blocking
+  // Notify seller + buyer — non-blocking
   const [seller] = await db
     .select({ name: sellersTable.name, email: sellersTable.email })
     .from(sellersTable)
     .where(eq(sellersTable.id, deal.sellerId))
     .limit(1);
+  const rawProto = req.headers["x-forwarded-proto"];
+  const proto =
+    (Array.isArray(rawProto) ? rawProto[0] : rawProto) ?? req.protocol;
+  const rawHost = req.headers["x-forwarded-host"];
+  const host =
+    (Array.isArray(rawHost) ? rawHost[0] : rawHost) ?? req.get("host") ?? "";
+  const baseUrl = `${proto}://${host}`;
+
   if (seller?.email) {
-    const rawProto = req.headers["x-forwarded-proto"];
-    const proto =
-      (Array.isArray(rawProto) ? rawProto[0] : rawProto) ?? req.protocol;
-    const rawHost = req.headers["x-forwarded-host"];
-    const host =
-      (Array.isArray(rawHost) ? rawHost[0] : rawHost) ?? req.get("host") ?? "";
     notifySellerPaymentReceived({
       sellerName: seller.name,
       sellerEmail: seller.email,
@@ -356,9 +358,21 @@ router.post("/deals/:id/pay", async (req, res) => {
       itemName: deal.itemName,
       amount: parseFloat(deal.price),
       dealCode: deal.code,
-      dashboardUrl: `${proto}://${host}/deals/${deal.id}`,
+      dashboardUrl: `${baseUrl}/deals/${deal.id}`,
     }).catch((err) =>
       logger.error({ err }, "Seller notification failed (/pay)"),
+    );
+  }
+  if (updated.buyerEmail && updated.deliveryCode) {
+    notifyBuyerDeliveryCode({
+      buyerName: updated.buyerName ?? "Buyer",
+      buyerEmail: updated.buyerEmail,
+      itemName: updated.itemName,
+      sellerName: seller?.name ?? "Seller",
+      deliveryCode: updated.deliveryCode,
+      confirmUrl: `${baseUrl}/confirm/${updated.code}`,
+    }).catch((err) =>
+      logger.error({ err }, "Buyer delivery code notification failed (/pay)"),
     );
   }
 

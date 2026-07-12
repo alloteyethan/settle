@@ -69,7 +69,7 @@ export default function DealDetailPage() {
     query: {
       enabled: !!dealId,
       queryKey: getGetDealQueryKey(dealId),
-      refetchInterval: 5000,
+      refetchInterval: 30000,
     },
   });
 

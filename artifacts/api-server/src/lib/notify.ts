@@ -112,6 +112,121 @@ function paymentEmailHtml(p: PaymentNotificationPayload): string {
 </html>`;
 }
 
+interface BuyerDeliveryCodePayload {
+  buyerName: string;
+  buyerEmail: string;
+  itemName: string;
+  sellerName: string;
+  deliveryCode: string;
+  confirmUrl: string;
+}
+
+function buyerDeliveryCodeHtml(p: BuyerDeliveryCodePayload): string {
+  return `
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#f8fafc;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f8fafc;padding:32px 16px;">
+    <tr><td align="center">
+      <table width="100%" style="max-width:520px;background:#ffffff;border-radius:12px;border:1px solid #e2e8f0;overflow:hidden;">
+
+        <!-- Header -->
+        <tr>
+          <td style="background:#1d4ed8;padding:24px 32px;text-align:center;">
+            <p style="margin:0;color:#ffffff;font-size:20px;font-weight:700;letter-spacing:-0.5px;">🔒 SETTLE</p>
+            <p style="margin:6px 0 0;color:#bfdbfe;font-size:13px;">Secure Escrow Platform</p>
+          </td>
+        </tr>
+
+        <!-- Body -->
+        <tr>
+          <td style="padding:28px 32px 0;">
+            <p style="margin:0;font-size:16px;color:#0f172a;">Hi <strong>${p.buyerName}</strong>,</p>
+            <p style="margin:12px 0 0;font-size:15px;color:#334155;line-height:1.6;">
+              Your payment for <strong>${p.itemName}</strong> is safely held in escrow. Here is your 4-digit seller confirmation code — keep it safe and <strong>only share it once you have received the item or service</strong>.
+            </p>
+          </td>
+        </tr>
+
+        <!-- Code box -->
+        <tr>
+          <td style="padding:24px 32px;">
+            <table width="100%" cellpadding="0" cellspacing="0" style="background:#f0fdf4;border:2px solid #86efac;border-radius:12px;">
+              <tr>
+                <td style="padding:24px;text-align:center;">
+                  <p style="margin:0;font-size:11px;font-weight:700;letter-spacing:1px;color:#166534;text-transform:uppercase;">Your Seller Confirmation Code</p>
+                  <p style="margin:12px 0 0;font-size:48px;font-weight:800;letter-spacing:12px;color:#14532d;">${p.deliveryCode}</p>
+                  <p style="margin:12px 0 0;font-size:13px;color:#166534;">Give this code to <strong>${p.sellerName}</strong> only after you receive the item.</p>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+        <!-- CTA -->
+        <tr>
+          <td style="padding:0 32px 32px;text-align:center;">
+            <a href="${p.confirmUrl}" style="display:inline-block;background:#1d4ed8;color:#ffffff;font-size:15px;font-weight:600;padding:14px 32px;border-radius:8px;text-decoration:none;">
+              Track Your Order →
+            </a>
+            <p style="margin:20px 0 0;font-size:12px;color:#94a3b8;">
+              You can also raise a dispute from the link above if anything goes wrong.
+            </p>
+          </td>
+        </tr>
+
+        <!-- Footer -->
+        <tr>
+          <td style="background:#f8fafc;border-top:1px solid #e2e8f0;padding:16px 32px;text-align:center;">
+            <p style="margin:0;font-size:12px;color:#94a3b8;">
+              You're receiving this because you made a purchase via SETTLE Escrow. © SETTLE
+            </p>
+          </td>
+        </tr>
+
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`;
+}
+
+export async function notifyBuyerDeliveryCode(payload: BuyerDeliveryCodePayload): Promise<void> {
+  const apiKey = process.env["RESEND_API_KEY"];
+  const fromEmail = process.env["NOTIFY_FROM_EMAIL"] ?? "SETTLE <notifications@settle.shop>";
+
+  if (!apiKey) {
+    logger.info({ buyerEmail: payload.buyerEmail }, "RESEND_API_KEY not set — skipping buyer delivery code email");
+    return;
+  }
+
+  try {
+    const res = await fetch(RESEND_API, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        from: fromEmail,
+        to: [payload.buyerEmail],
+        subject: `Your confirmation code for "${payload.itemName}" — keep it safe`,
+        html: buyerDeliveryCodeHtml(payload),
+      }),
+    });
+
+    if (!res.ok) {
+      const body = await res.text();
+      logger.warn({ status: res.status, body, buyerEmail: payload.buyerEmail }, "Resend API returned non-OK status for buyer code email");
+    } else {
+      logger.info({ buyerEmail: payload.buyerEmail, item: payload.itemName }, "Buyer delivery code notification sent");
+    }
+  } catch (err) {
+    logger.error({ err, buyerEmail: payload.buyerEmail }, "Failed to send buyer delivery code email");
+  }
+}
+
 export async function notifySellerPaymentReceived(payload: PaymentNotificationPayload): Promise<void> {
   const apiKey = process.env["RESEND_API_KEY"];
   const fromEmail = process.env["NOTIFY_FROM_EMAIL"] ?? "SETTLE <notifications@settle.shop>";

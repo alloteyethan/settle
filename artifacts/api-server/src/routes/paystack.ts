@@ -3,7 +3,7 @@ import crypto from "node:crypto";
 import { db, dealsTable, activityTable, sellersTable } from "@workspace/db";
 import { eq, and } from "drizzle-orm";
 import { logger } from "../lib/logger";
-import { notifySellerPaymentReceived } from "../lib/notify";
+import { notifySellerPaymentReceived, notifyBuyerDeliveryCode } from "../lib/notify";
 import type { Request, Response } from "express";
 
 const router = Router();
@@ -210,12 +210,14 @@ router.get("/deals/:id/paystack/verify", async (req: Request, res: Response) => 
     .limit(1);
   logger.info({ dealId, reference }, "Payment verified and deal locked");
 
-  // Send seller notification (non-blocking — never delays the response)
+  // Send notifications (non-blocking — never delays the response)
+  const rawProto = req.headers["x-forwarded-proto"];
+  const proto = (Array.isArray(rawProto) ? rawProto[0] : rawProto) ?? req.protocol;
+  const rawHost = req.headers["x-forwarded-host"];
+  const host = (Array.isArray(rawHost) ? rawHost[0] : rawHost) ?? req.get("host") ?? "";
+  const baseUrl = `${proto}://${host}`;
+
   if (seller?.email) {
-    const rawProto = req.headers["x-forwarded-proto"];
-    const proto = (Array.isArray(rawProto) ? rawProto[0] : rawProto) ?? req.protocol;
-    const rawHost = req.headers["x-forwarded-host"];
-    const host = (Array.isArray(rawHost) ? rawHost[0] : rawHost) ?? req.get("host") ?? "";
     notifySellerPaymentReceived({
       sellerName: seller.name,
       sellerEmail: seller.email,
@@ -224,8 +226,18 @@ router.get("/deals/:id/paystack/verify", async (req: Request, res: Response) => 
       itemName: updated.itemName,
       amount: parseFloat(updated.price),
       dealCode: updated.code,
-      dashboardUrl: `${proto}://${host}/deals/${updated.id}`,
+      dashboardUrl: `${baseUrl}/deals/${updated.id}`,
     }).catch((err) => logger.error({ err }, "Seller notification failed"));
+  }
+  if (updated.buyerEmail && updated.deliveryCode) {
+    notifyBuyerDeliveryCode({
+      buyerName: updated.buyerName ?? "Buyer",
+      buyerEmail: updated.buyerEmail,
+      itemName: updated.itemName,
+      sellerName: seller?.name ?? "Seller",
+      deliveryCode: updated.deliveryCode,
+      confirmUrl: `${baseUrl}/confirm/${updated.code}`,
+    }).catch((err) => logger.error({ err }, "Buyer delivery code notification failed"));
   }
 
   res.json({
@@ -309,12 +321,11 @@ router.post("/webhooks/paystack", async (req: Request, res: Response) => {
       .from(sellersTable)
       .where(eq(sellersTable.id, lockedDeal.sellerId))
       .limit(1);
+    const domains = process.env["REPLIT_DOMAINS"] ?? "";
+    const primaryDomain = domains.split(",")[0]?.trim();
+    const baseUrl = primaryDomain ? `https://${primaryDomain}` : "";
+
     if (seller?.email) {
-      const domains = process.env["REPLIT_DOMAINS"] ?? "";
-      const primaryDomain = domains.split(",")[0]?.trim();
-      const dashboardUrl = primaryDomain
-        ? `https://${primaryDomain}/deals/${lockedDeal.id}`
-        : `/deals/${lockedDeal.id}`;
       notifySellerPaymentReceived({
         sellerName: seller.name,
         sellerEmail: seller.email,
@@ -323,8 +334,18 @@ router.post("/webhooks/paystack", async (req: Request, res: Response) => {
         itemName: lockedDeal.itemName,
         amount: parseFloat(lockedDeal.price),
         dealCode: lockedDeal.code,
-        dashboardUrl,
+        dashboardUrl: `${baseUrl}/deals/${lockedDeal.id}`,
       }).catch((err) => logger.error({ err }, "Seller notification failed (webhook)"));
+    }
+    if (lockedDeal.buyerEmail && lockedDeal.deliveryCode) {
+      notifyBuyerDeliveryCode({
+        buyerName: lockedDeal.buyerName ?? "Buyer",
+        buyerEmail: lockedDeal.buyerEmail,
+        itemName: lockedDeal.itemName,
+        sellerName: seller?.name ?? "Seller",
+        deliveryCode: lockedDeal.deliveryCode,
+        confirmUrl: `${baseUrl}/confirm/${lockedDeal.code}`,
+      }).catch((err) => logger.error({ err }, "Buyer delivery code notification failed (webhook)"));
     }
   }
 });
