@@ -22,12 +22,19 @@ async function buildAll() {
     outdir: distDir,
     outExtension: { ".js": ".mjs" },
     logLevel: "info",
-    // Some packages may not be bundleable, so we externalize them, we can add more here as needed.
-    // Some of the packages below may not be imported or installed, but we're adding them in case they are in the future.
-    // Examples of unbundleable packages:
-    // - uses native modules and loads them dynamically (e.g. sharp)
-    // - use path traversal to read files (e.g. @google-cloud/secret-manager loads sibling .proto files)
+    // Runtime npm packages that are DIRECT deps of this package — safe to resolve from
+    // node_modules at runtime. Transitive-only deps (zod, pg) must stay bundled because
+    // pnpm's strict layout doesn't expose them to this package at runtime.
+    // @workspace/* libs are intentionally NOT here so they stay bundled (their compiled
+    // dist may not exist at deploy time).
     external: [
+      // Direct runtime deps of @workspace/api-server
+      "express", "cors", "cookie-parser",
+      "drizzle-orm", "drizzle-orm/*",
+      "pino", "pino-http",
+      "pg", "pg-pool", "pg/*",
+      "zod", "zod/*",
+      // Native / unbundleable packages
       "*.node",
       "sharp",
       "better-sqlite3",
