@@ -1,8 +1,9 @@
+import "./env";
 import app from "./app";
 import { logger } from "./lib/logger";
 import { autoReleaseOverdueDeals } from "./lib/autoRelease";
 
-const rawPort = process.env["PORT"];
+const rawPort = process.env["PORT"] ?? process.env["API_PORT"];
 
 if (!rawPort) {
   throw new Error(

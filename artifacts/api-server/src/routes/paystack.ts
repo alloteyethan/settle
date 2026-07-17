@@ -4,6 +4,7 @@ import { db, dealsTable, activityTable, sellersTable } from "@workspace/db";
 import { eq, and } from "drizzle-orm";
 import { logger } from "../lib/logger";
 import { notifySellerPaymentReceived, notifyBuyerDeliveryCode } from "../lib/notify";
+import { getAppUrl } from "../lib/url";
 import type { Request, Response } from "express";
 
 const router = Router();
@@ -89,11 +90,7 @@ router.post("/deals/:id/paystack/init", async (req: Request, res: Response) => {
   }
 
   // Build callback URL from the incoming request
-  const rawProto0 = req.headers["x-forwarded-proto"];
-  const proto = (Array.isArray(rawProto0) ? rawProto0[0] : rawProto0) ?? req.protocol;
-  const rawHost0 = req.headers["x-forwarded-host"];
-  const host = (Array.isArray(rawHost0) ? rawHost0[0] : rawHost0) ?? req.get("host") ?? "";
-  const callbackUrl = `${proto}://${host}/pay/${deal.code}`;
+  const callbackUrl = `${getAppUrl(req)}/pay/${deal.code}`;
 
   // Amount in pesewas (GHS × 100)
   const amountPesewas = Math.round(parseFloat(deal.price) * 100);
@@ -211,11 +208,7 @@ router.get("/deals/:id/paystack/verify", async (req: Request, res: Response) => 
   logger.info({ dealId, reference }, "Payment verified and deal locked");
 
   // Send notifications (non-blocking — never delays the response)
-  const rawProto = req.headers["x-forwarded-proto"];
-  const proto = (Array.isArray(rawProto) ? rawProto[0] : rawProto) ?? req.protocol;
-  const rawHost = req.headers["x-forwarded-host"];
-  const host = (Array.isArray(rawHost) ? rawHost[0] : rawHost) ?? req.get("host") ?? "";
-  const baseUrl = `${proto}://${host}`;
+  const baseUrl = getAppUrl(req);
 
   if (seller?.email) {
     notifySellerPaymentReceived({
@@ -321,9 +314,7 @@ router.post("/webhooks/paystack", async (req: Request, res: Response) => {
       .from(sellersTable)
       .where(eq(sellersTable.id, lockedDeal.sellerId))
       .limit(1);
-    const domains = process.env["REPLIT_DOMAINS"] ?? "";
-    const primaryDomain = domains.split(",")[0]?.trim();
-    const baseUrl = primaryDomain ? `https://${primaryDomain}` : "";
+    const baseUrl = getAppUrl();
 
     if (seller?.email) {
       notifySellerPaymentReceived({

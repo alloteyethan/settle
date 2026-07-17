@@ -4,13 +4,23 @@ A peer-to-peer escrow platform for informal commerce in West Africa. Sellers gen
 
 ## Run & Operate
 
-- `pnpm --filter @workspace/api-server run dev` — run the API server (port 8080)
-- `pnpm --filter @workspace/settle run dev` — run the frontend (port 18674)
+- `pnpm install` — install dependencies (requires pnpm)
+- Copy `.env.example` to `.env` and set `DATABASE_URL`
+- `pnpm run dev` — run API (port 8080) and frontend (port 5173) together
+- `pnpm --filter @workspace/api-server run dev` — API only
+- `pnpm --filter @workspace/settle run dev` — frontend only
 - `pnpm run typecheck` — full typecheck across all packages
 - `pnpm run build` — typecheck + build all packages
 - `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
 - `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
 - Required env: `DATABASE_URL` — Postgres connection string
+- Optional env: `APP_URL` — public URL for payment callbacks and emails (set in Vercel production)
+
+## Deploy (Vercel)
+
+- Frontend builds from `artifacts/settle` via `vercel.json`
+- API is served as a serverless function from `api/index.ts`
+- Set `DATABASE_URL`, `APP_URL`, and `PAYSTACK_SECRET_KEY` in Vercel project env vars
 
 ## Stack
 
