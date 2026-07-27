@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Copy, Check, MessageSquare, AlertCircle, ArrowRight } from "lucide-react";
+import { Copy, Check, MessageSquare, AlertCircle } from "lucide-react";
 
 export default function CreateDealPage() {
   const router = useRouter();
@@ -82,17 +82,17 @@ export default function CreateDealPage() {
   };
 
   return (
-    <div className="max-w-[1120px] mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-6">
+    <div className="w-full max-w-[1120px] mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10 space-y-6">
       {!createdDeal ? (
-        <div className="max-w-[480px] mx-auto space-y-6">
+        <div className="w-full max-w-[480px] mx-auto space-y-6">
           <div className="space-y-1 text-center">
-            <h1 className="text-2xl font-semibold text-[#1F1B14]">Create Deal Link</h1>
+            <h1 className="text-xl sm:text-2xl font-semibold text-[#1F1B14]">Create Deal Link</h1>
             <p className="text-xs text-[#8A8271]">
               Generate a secure escrow link for your buyer on WhatsApp
             </p>
           </div>
 
-          <div className="bg-white p-6 sm:p-8 rounded-xl border border-[#E4DDCB] space-y-5">
+          <div className="bg-white p-5 sm:p-8 rounded-xl border border-[#E4DDCB] space-y-5">
             {error && (
               <div className="p-3 rounded-lg bg-[#F7E6E2] border border-[#A33B2E]/20 flex items-center space-x-2 text-[#A33B2E] text-xs font-medium">
                 <AlertCircle className="w-4 h-4 shrink-0 stroke-[1.75]" />
@@ -180,40 +180,38 @@ export default function CreateDealPage() {
         </div>
       ) : (
         /* Generated Success View */
-        <div className="max-w-[540px] mx-auto space-y-6">
+        <div className="w-full max-w-[540px] mx-auto space-y-6">
           <div className="text-center space-y-1">
-            <h1 className="text-2xl font-semibold text-[#1F1B14]">Deal Link Created</h1>
+            <h1 className="text-xl sm:text-2xl font-semibold text-[#1F1B14]">Deal Link Created</h1>
             <p className="text-xs text-[#8A8271]">Share this payment link with your buyer</p>
           </div>
 
-          <div className="bg-white p-6 sm:p-8 rounded-xl border border-[#E4DDCB] space-y-6">
+          <div className="bg-white p-5 sm:p-8 rounded-xl border border-[#E4DDCB] space-y-5">
             {/* Copyable Link Field */}
             <div className="space-y-1">
               <label className="settle-label">Payment Link</label>
-              <div className="flex space-x-2">
+              <div className="flex flex-col sm:flex-row gap-2">
                 <input
                   type="text"
                   readOnly
                   value={getPublicPayUrl()}
-                  className="flex-1 settle-input px-3 font-mono text-sm bg-[#FAF6EE]"
+                  className="flex-1 settle-input px-3 font-mono text-xs bg-[#FAF6EE] truncate"
                 />
                 <button
                   onClick={handleCopyLink}
-                  className="px-4 btn-secondary text-xs flex items-center space-x-1 shrink-0"
+                  className="h-10 px-4 btn-secondary text-xs flex items-center justify-center space-x-1 shrink-0"
                 >
                   {copiedLink ? <Check className="w-4 h-4 stroke-[2]" /> : <Copy className="w-4 h-4 stroke-[1.75]" />}
-                  <span>{copiedLink ? "Copied" : "Copy"}</span>
+                  <span>{copiedLink ? "Copied" : "Copy Link"}</span>
                 </button>
               </div>
             </div>
 
             {/* WhatsApp Message Card */}
             <div className="space-y-2 pt-2">
-              <div className="flex items-center justify-between">
-                <label className="settle-label mb-0">Pre-formatted WhatsApp Message</label>
-              </div>
+              <label className="settle-label mb-0">Pre-formatted WhatsApp Message</label>
 
-              <div className="p-3.5 rounded-lg bg-[#FAF6EE] border border-[#E4DDCB] font-mono text-xs text-[#4A4438] leading-relaxed whitespace-pre-wrap">
+              <div className="p-3.5 rounded-lg bg-[#FAF6EE] border border-[#E4DDCB] font-mono text-xs text-[#4A4438] leading-relaxed whitespace-pre-wrap break-words">
                 {getWhatsAppMessage()}
               </div>
 

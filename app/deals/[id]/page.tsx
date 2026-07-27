@@ -17,7 +17,7 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
 
-  // Fulfillment form modal / Inline state
+  // Fulfillment form modal
   const [showFulfillModal, setShowFulfillModal] = useState(false);
   const [fulfillmentType, setFulfillmentType] = useState("shipped");
   const [deliveryCodeInput, setDeliveryCodeInput] = useState("");
@@ -164,7 +164,7 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
   }
 
   return (
-    <div className="max-w-[640px] mx-auto px-4 sm:px-6 py-8 space-y-6">
+    <div className="w-full max-w-[640px] mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-5 sm:space-y-6">
       {/* Header Bar */}
       <div className="flex items-center justify-between">
         <Link href="/deals" className="inline-flex items-center space-x-1 text-xs font-semibold text-[#8A8271] hover:text-[#1F1B14]">
@@ -178,7 +178,7 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
       </div>
 
       {/* Progress Indicator Card */}
-      <div className="bg-white p-5 sm:p-6 rounded-xl border border-[#E4DDCB]">
+      <div className="bg-white p-4 sm:p-6 rounded-xl border border-[#E4DDCB]">
         <TransactionProgress status={deal.status} />
       </div>
 
@@ -188,14 +188,14 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
       )}
 
       {/* Deal Main Card */}
-      <div className="bg-white p-6 sm:p-8 rounded-xl border border-[#E4DDCB] space-y-6">
+      <div className="bg-white p-5 sm:p-8 rounded-xl border border-[#E4DDCB] space-y-5">
         <div className="border-b border-[#E4DDCB] pb-4 space-y-1">
-          <h2 className="text-xl font-semibold text-[#1F1B14]">{deal.itemName}</h2>
+          <h2 className="text-lg sm:text-xl font-semibold text-[#1F1B14]">{deal.itemName}</h2>
           {deal.description && <p className="text-xs text-[#4A4438]">{deal.description}</p>}
         </div>
 
         {/* Pricing Breakdown */}
-        <div className="p-4 rounded-lg bg-[#FAF6EE] border border-[#E4DDCB] grid grid-cols-3 gap-2 text-xs">
+        <div className="p-3.5 sm:p-4 rounded-lg bg-[#FAF6EE] border border-[#E4DDCB] grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
           <div>
             <span className="settle-label mb-0">Total Price</span>
             <div className="font-mono text-base font-semibold text-[#1F1B14]">GHS {deal.price.toFixed(2)}</div>
@@ -228,12 +228,12 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
         {deal.status === "created" && (
           <div className="pt-2 border-t border-[#E4DDCB] space-y-3">
             <span className="settle-label">Share Payment Link</span>
-            <div className="flex space-x-2">
+            <div className="flex flex-col sm:flex-row gap-2">
               <input
                 type="text"
                 readOnly
                 value={getPublicPayUrl()}
-                className="flex-1 settle-input px-3 font-mono text-xs bg-[#FAF6EE]"
+                className="flex-1 settle-input px-3 font-mono text-xs bg-[#FAF6EE] truncate"
               />
               <button
                 onClick={() => {
@@ -241,10 +241,10 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
                   setCopied(true);
                   setTimeout(() => setCopied(false), 2500);
                 }}
-                className="px-4 btn-secondary text-xs shrink-0 flex items-center space-x-1"
+                className="h-10 px-4 btn-secondary text-xs shrink-0 flex items-center justify-center space-x-1"
               >
                 {copied ? <Check className="w-4 h-4 stroke-[2]" /> : <Copy className="w-4 h-4 stroke-[1.75]" />}
-                <span>{copied ? "Copied" : "Copy"}</span>
+                <span>{copied ? "Copied" : "Copy Link"}</span>
               </button>
             </div>
           </div>
@@ -290,7 +290,7 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
                 placeholder="Explain delivery details..."
                 className="w-full settle-input p-3 text-xs h-auto resize-none"
               />
-              <div className="flex gap-2">
+              <div className="flex flex-col sm:flex-row gap-2">
                 <button
                   type="submit"
                   disabled={disputeSubmitting}
@@ -301,7 +301,7 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
                 <button
                   type="button"
                   onClick={handleRefund}
-                  className="px-3 h-10 btn-secondary text-xs text-[#A33B2E] border-[#A33B2E]/30"
+                  className="px-4 h-10 btn-secondary text-xs text-[#A33B2E] border-[#A33B2E]/30"
                 >
                   Issue Refund
                 </button>
@@ -314,7 +314,7 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
       {/* Fulfillment Confirmation Modal */}
       {showFulfillModal && (
         <div className="fixed inset-0 z-50 bg-[#1F1B14]/40 flex items-center justify-center p-4">
-          <div className="w-full max-w-[440px] bg-white p-6 rounded-xl border border-[#E4DDCB] space-y-4 shadow-[0_8px_24px_rgba(31,27,20,0.10)]">
+          <div className="w-full max-w-[440px] bg-white p-5 sm:p-6 rounded-xl border border-[#E4DDCB] space-y-4 shadow-[0_8px_24px_rgba(31,27,20,0.10)]">
             <div className="space-y-1">
               <h3 className="text-base font-semibold text-[#1F1B14]">Confirm Delivery</h3>
               <p className="text-xs text-[#8A8271]">

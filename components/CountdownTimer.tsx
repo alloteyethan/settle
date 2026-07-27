@@ -36,12 +36,12 @@ export function CountdownTimer({ deadline }: { deadline: string | null }) {
   if (!deadline) return null;
 
   return (
-    <div className="p-3.5 rounded-lg bg-[#E7ECF1] border border-[#3E5C76]/20 flex items-center justify-between text-xs text-[#3E5C76]">
+    <div className="p-3.5 rounded-lg bg-[#E7ECF1] border border-[#3E5C76]/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 text-xs text-[#3E5C76]">
       <div>
         <span className="font-semibold block">
           {isExpired ? "Escrow Window Expired" : "Escrow Window Remaining"}
         </span>
-        <span className="text-[11px] opacity-80">
+        <span className="text-[11px] opacity-80 leading-normal block">
           {isExpired
             ? "Delivery window completed — auto-releasing funds to seller."
             : "Funds auto-release to seller if no dispute is raised before timer ends."}
@@ -49,7 +49,7 @@ export function CountdownTimer({ deadline }: { deadline: string | null }) {
       </div>
 
       {timeLeft && (
-        <div className="font-mono text-sm font-semibold tracking-wider bg-white px-2.5 py-1 rounded border border-[#E4DDCB] shrink-0 ml-3">
+        <div className="font-mono text-xs sm:text-sm font-semibold tracking-wider bg-white px-2.5 py-1 rounded border border-[#E4DDCB] shrink-0 self-start sm:self-auto">
           {String(timeLeft.hours).padStart(2, "0")}:{String(timeLeft.minutes).padStart(2, "0")}:{String(timeLeft.seconds).padStart(2, "0")}
         </div>
       )}

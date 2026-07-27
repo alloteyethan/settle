@@ -52,8 +52,8 @@ export default function AdminPage() {
   };
 
   return (
-    <div className="max-w-[800px] mx-auto px-4 sm:px-6 py-8 space-y-6">
-      <div className="flex items-center justify-between border-b border-[#E4DDCB] pb-4">
+    <div className="w-full max-w-[800px] mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#E4DDCB] pb-4">
         <div>
           <div className="inline-flex items-center space-x-1.5 px-2.5 py-0.5 rounded-md bg-[#E7ECF1] text-[#3E5C76] text-xs font-medium mb-1">
             <Lock className="w-3.5 h-3.5 stroke-[1.75]" />
@@ -67,7 +67,7 @@ export default function AdminPage() {
 
         <button
           onClick={fetchDisputes}
-          className="px-3 py-1.5 rounded-lg text-xs font-semibold btn-secondary flex items-center space-x-1"
+          className="self-start sm:self-auto px-3 py-1.5 rounded-lg text-xs font-semibold btn-secondary flex items-center space-x-1"
         >
           <RefreshCcw className="w-3.5 h-3.5 stroke-[1.75]" />
           <span>Refresh</span>
@@ -84,8 +84,8 @@ export default function AdminPage() {
       ) : (
         <div className="space-y-4">
           {disputes.map((dispute) => (
-            <div key={dispute.id} className="bg-white p-6 rounded-xl border border-[#E4DDCB] space-y-5">
-              <div className="flex items-center justify-between border-b border-[#E4DDCB] pb-3">
+            <div key={dispute.id} className="bg-white p-5 sm:p-6 rounded-xl border border-[#E4DDCB] space-y-5">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#E4DDCB] pb-3">
                 <div>
                   <div className="flex items-center space-x-2">
                     <span className="font-mono text-xs font-semibold text-[#A33B2E]">Dispute #{dispute.id}</span>
@@ -96,7 +96,7 @@ export default function AdminPage() {
                   </div>
                 </div>
 
-                <span className="px-2.5 py-0.5 rounded-full text-[11px] font-medium uppercase tracking-wide bg-[#F7E6E2] text-[#A33B2E]">
+                <span className="self-start sm:self-auto px-2.5 py-0.5 rounded-full text-[11px] font-medium uppercase tracking-wide bg-[#F7E6E2] text-[#A33B2E]">
                   {dispute.status}
                 </span>
               </div>
@@ -126,12 +126,12 @@ export default function AdminPage() {
 
               {/* Actions */}
               {dispute.status !== "resolved_refund" && dispute.status !== "resolved_seller" ? (
-                <div className="pt-2 border-t border-[#E4DDCB] flex items-center justify-between">
+                <div className="pt-2 border-t border-[#E4DDCB] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <span className="font-mono text-xs font-semibold text-[#1F1B14]">
                     Amount: GHS {dispute.deal?.price?.toFixed(2) || "0.00"}
                   </span>
 
-                  <div className="flex gap-2">
+                  <div className="flex flex-col sm:flex-row gap-2">
                     <button
                       onClick={() => handleResolve(dispute.id, "favor_buyer")}
                       disabled={resolvingId === dispute.id}

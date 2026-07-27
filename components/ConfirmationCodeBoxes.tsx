@@ -52,14 +52,14 @@ export function ConfirmationCodeBoxes({ value, onChange, readOnly = false }: Con
   };
 
   return (
-    <div className="flex items-center justify-center space-x-3 my-2" onPaste={handlePaste}>
+    <div className="flex items-center justify-center space-x-2 sm:space-x-3 my-2" onPaste={handlePaste}>
       {[0, 1, 2, 3].map((idx) => (
         <div
           key={idx}
-          className="w-[48px] h-[56px] bg-white border border-[#E4DDCB] rounded-lg flex items-center justify-center shadow-xs"
+          className="w-[44px] sm:w-[48px] h-[52px] sm:h-[56px] bg-white border border-[#E4DDCB] rounded-lg flex items-center justify-center shadow-xs shrink-0"
         >
           {readOnly ? (
-            <span className="font-mono text-2xl font-semibold text-[#1F1B14] tracking-tight">
+            <span className="font-mono text-xl sm:text-2xl font-semibold text-[#1F1B14] tracking-tight">
               {digits[idx] || "•"}
             </span>
           ) : (
@@ -71,7 +71,7 @@ export function ConfirmationCodeBoxes({ value, onChange, readOnly = false }: Con
               value={digits[idx] || ""}
               onChange={(e) => handleChange(idx, e.target.value)}
               onKeyDown={(e) => handleKeyDown(idx, e)}
-              className="w-full h-full text-center font-mono text-2xl font-semibold text-[#1F1B14] bg-transparent outline-none focus:border-[#1C5A44] border-0"
+              className="w-full h-full text-center font-mono text-xl sm:text-2xl font-semibold text-[#1F1B14] bg-transparent outline-none focus:border-[#1C5A44] border-0 p-0"
             />
           )}
         </div>
