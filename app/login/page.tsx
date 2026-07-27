@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ShieldCheck, Lock, Mail, ArrowRight, AlertCircle } from "lucide-react";
+import { Lock, AlertCircle } from "lucide-react";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -40,66 +40,59 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center p-4">
-      <div className="w-full max-w-md glass-card p-8 rounded-2xl border border-slate-800 space-y-6 shadow-2xl relative z-10">
+      <div className="w-full max-w-[480px] bg-white p-6 sm:p-8 rounded-xl border border-[#E4DDCB] space-y-6">
         <div className="text-center space-y-2">
-          <div className="w-12 h-12 rounded-xl bg-gradient-to-tr from-emerald-500 to-cyan-500 flex items-center justify-center mx-auto shadow-lg shadow-emerald-500/20">
-            <ShieldCheck className="w-7 h-7 text-slate-950 stroke-[2.5]" />
+          <div className="w-10 h-10 rounded-lg bg-[#E1EBE3] text-[#1C5A44] flex items-center justify-center mx-auto border border-[#1C5A44]/20">
+            <Lock className="w-5 h-5 stroke-[1.75]" />
           </div>
-          <h2 className="text-2xl font-extrabold text-white">Welcome Back</h2>
-          <p className="text-xs text-slate-400">Log in to manage your SETTLE escrow deals</p>
+          <h2 className="text-xl font-semibold text-[#1F1B14]">Seller Login</h2>
+          <p className="text-xs text-[#8A8271]">Access your SETTLE dashboard and escrow deals</p>
         </div>
 
         {error && (
-          <div className="p-3 rounded-lg bg-rose-500/10 border border-rose-500/30 flex items-center space-x-2 text-rose-400 text-xs font-semibold">
-            <AlertCircle className="w-4 h-4 shrink-0" />
+          <div className="p-3 rounded-lg bg-[#F7E6E2] border border-[#A33B2E]/20 flex items-center space-x-2 text-[#A33B2E] text-xs font-medium">
+            <AlertCircle className="w-4 h-4 shrink-0 stroke-[1.75]" />
             <span>{error}</span>
           </div>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-1.5">
-            <label className="text-xs font-bold text-slate-300">Email Address</label>
-            <div className="relative">
-              <Mail className="w-4 h-4 text-slate-500 absolute left-3.5 top-3" />
-              <input
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="seller@example.com"
-                className="w-full bg-slate-900/90 border border-slate-800 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 rounded-xl py-2.5 pl-10 pr-4 text-sm text-white placeholder-slate-600 transition-all outline-none"
-              />
-            </div>
+          <div>
+            <label className="settle-label">Email Address</label>
+            <input
+              type="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="seller@example.com"
+              className="w-full settle-input px-3"
+            />
           </div>
 
-          <div className="space-y-1.5">
-            <label className="text-xs font-bold text-slate-300">Password</label>
-            <div className="relative">
-              <Lock className="w-4 h-4 text-slate-500 absolute left-3.5 top-3" />
-              <input
-                type="password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                className="w-full bg-slate-900/90 border border-slate-800 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 rounded-xl py-2.5 pl-10 pr-4 text-sm text-white placeholder-slate-600 transition-all outline-none"
-              />
-            </div>
+          <div>
+            <label className="settle-label">Password</label>
+            <input
+              type="password"
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="••••••••"
+              className="w-full settle-input px-3"
+            />
           </div>
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3 rounded-xl text-sm font-bold bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-400 hover:to-cyan-400 text-slate-950 shadow-lg shadow-emerald-500/20 transition-all hover:scale-[1.02] flex items-center justify-center space-x-2 disabled:opacity-50"
+            className="w-full h-12 btn-primary transition-colors disabled:opacity-50 mt-2"
           >
-            <span>{loading ? "Signing in..." : "Log In to Dashboard"}</span>
-            <ArrowRight className="w-4 h-4 stroke-[2.5]" />
+            {loading ? "Signing in..." : "Log In to Dashboard"}
           </button>
         </form>
 
-        <div className="pt-2 text-center text-xs text-slate-400 border-t border-slate-800/60">
+        <div className="pt-2 text-center text-xs text-[#8A8271] border-t border-[#E4DDCB]">
           <span>Don&apos;t have a seller account? </span>
-          <Link href="/register" className="text-emerald-400 font-bold hover:underline">
+          <Link href="/register" className="text-[#1C5A44] font-semibold hover:underline">
             Register here
           </Link>
         </div>

@@ -1,4 +1,4 @@
-import { CheckCircle2, Lock, Truck, DollarSign, AlertTriangle } from "lucide-react";
+import { Check, AlertCircle } from "lucide-react";
 
 interface Step {
   id: string;
@@ -7,10 +7,10 @@ interface Step {
 }
 
 const steps: Step[] = [
-  { id: "created", name: "Link Created", description: "Waiting for buyer payment" },
-  { id: "locked", name: "Payment Locked", description: "Funds secured in escrow" },
-  { id: "dispatched", name: "Dispatched", description: "Seller shipped / fulfilled" },
-  { id: "settled", name: "Settled", description: "Delivery confirmed & payout released" },
+  { id: "created", name: "Deal Link Created", description: "Waiting for buyer payment" },
+  { id: "locked", name: "Payment Locked", description: "Funds in escrow" },
+  { id: "dispatched", name: "Item Dispatched", description: "Seller shipped / delivered" },
+  { id: "settled", name: "Funds Released", description: "Payout sent to seller" },
 ];
 
 export function TransactionProgress({ status }: { status: string }) {
@@ -30,22 +30,20 @@ export function TransactionProgress({ status }: { status: string }) {
   };
 
   return (
-    <div className="w-full py-4">
+    <div className="w-full py-2">
       {status === "disputed" && (
-        <div className="mb-6 p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 flex items-start gap-3">
-          <AlertTriangle className="w-5 h-5 text-rose-400 shrink-0 mt-0.5" />
+        <div className="mb-6 p-3.5 rounded-lg bg-[#F7E6E2] border border-[#A33B2E]/20 flex items-start space-x-3 text-xs text-[#A33B2E]">
+          <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 stroke-[1.75]" />
           <div>
-            <h4 className="text-sm font-semibold text-rose-300">Transaction Disputed</h4>
-            <p className="text-xs text-rose-200/80 mt-0.5">
-              Escrow payout frozen. Support team reviewing buyer evidence and seller counter-proof.
-            </p>
+            <span className="font-semibold block">Transaction Disputed</span>
+            <span className="opacity-90">Escrow payout frozen while support reviews claims and evidence.</span>
           </div>
         </div>
       )}
 
       <div className="relative flex flex-col md:flex-row justify-between items-start md:items-center gap-6 md:gap-0">
-        {/* Horizontal Line for Desktop */}
-        <div className="hidden md:block absolute left-8 right-8 top-5 h-0.5 bg-slate-800 -z-0" />
+        {/* Desktop Hairline Connecting Line */}
+        <div className="hidden md:block absolute left-6 right-6 top-4 h-[1px] bg-[#E4DDCB] -z-0" />
 
         {steps.map((step, idx) => {
           const state = getStepState(step.id);
@@ -54,48 +52,38 @@ export function TransactionProgress({ status }: { status: string }) {
           const isDisputed = state === "disputed";
 
           return (
-            <div key={step.id} className="relative z-10 flex md:flex-col items-center gap-4 md:gap-2 text-left md:text-center group">
-              {/* Icon Circle */}
+            <div key={step.id} className="relative z-10 flex md:flex-col items-center gap-3 md:gap-2 text-left md:text-center">
+              {/* Numbered / Checked Circle */}
               <div
-                className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm transition-all duration-300 ${
-                  isComplete
-                    ? "bg-emerald-500 text-slate-950 shadow-lg shadow-emerald-500/30 ring-4 ring-slate-950"
-                    : isCurrent
-                    ? "bg-cyan-500 text-slate-950 shadow-lg shadow-cyan-500/40 ring-4 ring-cyan-500/20 animate-pulse"
+                className={`w-8 h-8 rounded-full flex items-center justify-center font-medium text-xs transition-colors ${
+                  isComplete || isCurrent
+                    ? "bg-[#1C5A44] text-white"
                     : isDisputed
-                    ? "bg-rose-500 text-white shadow-lg shadow-rose-500/30 ring-4 ring-slate-950"
-                    : "bg-slate-800 text-slate-400 border border-slate-700"
+                    ? "bg-[#A33B2E] text-white"
+                    : "bg-[#FFFFFF] text-[#8A8271] border border-[#C7BFAC]"
                 }`}
               >
                 {isComplete ? (
-                  <CheckCircle2 className="w-5 h-5 stroke-[2.5]" />
-                ) : step.id === "created" ? (
-                  <span>1</span>
-                ) : step.id === "locked" ? (
-                  <Lock className="w-4 h-4" />
-                ) : step.id === "dispatched" ? (
-                  <Truck className="w-4 h-4" />
+                  <Check className="w-4 h-4 stroke-[2.5]" />
                 ) : (
-                  <DollarSign className="w-4 h-4" />
+                  <span>{idx + 1}</span>
                 )}
               </div>
 
-              {/* Step Text */}
+              {/* Label */}
               <div className="flex flex-col">
                 <span
-                  className={`text-sm font-bold ${
-                    isComplete
-                      ? "text-emerald-400"
-                      : isCurrent
-                      ? "text-cyan-400"
+                  className={`text-xs font-semibold ${
+                    isComplete || isCurrent
+                      ? "text-[#1F1B14]"
                       : isDisputed
-                      ? "text-rose-400"
-                      : "text-slate-400"
+                      ? "text-[#A33B2E]"
+                      : "text-[#8A8271]"
                   }`}
                 >
                   {step.name}
                 </span>
-                <span className="text-[11px] text-slate-400 max-w-[140px] leading-tight mt-0.5">
+                <span className="text-[11px] text-[#8A8271] max-w-[130px] leading-tight mt-0.5 hidden sm:block">
                   {step.description}
                 </span>
               </div>

@@ -3,8 +3,8 @@
 import { useEffect, useState, use } from "react";
 import { TransactionProgress } from "@/components/TransactionProgress";
 import { CountdownTimer } from "@/components/CountdownTimer";
-import { ShieldCheck, CheckCircle2, AlertTriangle, ArrowRight, Lock, Sparkles } from "lucide-react";
-import confetti from "canvas-confetti";
+import { ConfirmationCodeBoxes } from "@/components/ConfirmationCodeBoxes";
+import { Check, AlertCircle, ShieldCheck } from "lucide-react";
 
 export default function PublicConfirmPage({ params }: { params: Promise<{ code: string }> }) {
   const { code } = use(params);
@@ -13,7 +13,6 @@ export default function PublicConfirmPage({ params }: { params: Promise<{ code: 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  // Delivery confirmation input
   const [codeDigits, setCodeDigits] = useState("");
   const [confirming, setConfirming] = useState(false);
   const [confirmError, setConfirmError] = useState("");
@@ -29,7 +28,7 @@ export default function PublicConfirmPage({ params }: { params: Promise<{ code: 
   const fetchDeal = async () => {
     try {
       const res = await fetch(`/api/deals/link/${code}`);
-      if (!res.ok) throw new Error("Deal not found or invalid link");
+      if (!res.ok) throw new Error("Deal link is invalid or has expired");
       const json = await res.json();
       setDeal(json);
     } catch (err: any) {
@@ -62,9 +61,6 @@ export default function PublicConfirmPage({ params }: { params: Promise<{ code: 
 
       setDeal(data);
       setSettledSuccess(true);
-      try {
-        confetti({ particleCount: 120, spread: 80, origin: { y: 0.5 } });
-      } catch (e) {}
     } catch (err: any) {
       setConfirmError(err.message);
     } finally {
@@ -101,10 +97,10 @@ export default function PublicConfirmPage({ params }: { params: Promise<{ code: 
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#050811] flex items-center justify-center p-4">
-        <div className="text-center space-y-3">
-          <div className="w-10 h-10 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto" />
-          <p className="text-sm font-medium text-slate-400">Loading order status...</p>
+      <div className="min-h-screen bg-[#FAF6EE] flex items-center justify-center p-4">
+        <div className="text-center space-y-2">
+          <div className="w-8 h-8 rounded-full border-2 border-[#1C5A44] border-t-transparent animate-spin mx-auto" />
+          <p className="text-xs font-medium text-[#8A8271]">Loading delivery status...</p>
         </div>
       </div>
     );
@@ -112,33 +108,33 @@ export default function PublicConfirmPage({ params }: { params: Promise<{ code: 
 
   if (error || !deal) {
     return (
-      <div className="min-h-screen bg-[#050811] flex items-center justify-center p-4">
-        <div className="w-full max-w-md glass-card p-6 rounded-2xl border border-rose-500/30 text-center space-y-4">
-          <AlertTriangle className="w-12 h-12 text-rose-400 mx-auto" />
-          <h2 className="text-lg font-bold text-white">Invalid Order Link</h2>
-          <p className="text-xs text-slate-400">{error || "Order not found"}</p>
+      <div className="min-h-screen bg-[#FAF6EE] flex items-center justify-center p-4">
+        <div className="w-full max-w-[480px] bg-white p-6 rounded-xl border border-[#A33B2E]/30 text-center space-y-3">
+          <AlertCircle className="w-8 h-8 text-[#A33B2E] mx-auto stroke-[1.75]" />
+          <h2 className="text-base font-semibold text-[#1F1B14]">Invalid Order Link</h2>
+          <p className="text-xs text-[#8A8271]">{error || "Order not found"}</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#050811] text-slate-100 flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
-      <div className="w-full max-w-2xl mx-auto space-y-6 relative z-10">
+    <div className="min-h-screen bg-[#FAF6EE] text-[#4A4438] flex flex-col justify-center py-10 px-4 sm:px-6">
+      <div className="w-full max-w-[540px] mx-auto space-y-6">
         {/* Brand Header */}
-        <div className="text-center space-y-2">
-          <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-semibold">
-            <ShieldCheck className="w-4 h-4 stroke-[2.5]" />
+        <div className="text-center space-y-1.5">
+          <div className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full bg-[#E1EBE3] text-[#1C5A44] text-xs font-semibold">
+            <ShieldCheck className="w-4 h-4 stroke-[2]" />
             <span>SETTLE Escrow Delivery Portal</span>
           </div>
-          <h1 className="text-2xl font-extrabold text-white">{deal.itemName}</h1>
-          <p className="text-xs text-slate-400">
-            Seller: <span className="font-bold text-white">{deal.sellerName}</span>
+          <h1 className="text-xl font-semibold text-[#1F1B14]">{deal.itemName}</h1>
+          <p className="text-xs text-[#8A8271]">
+            Seller: <span className="font-semibold text-[#1F1B14]">{deal.sellerName}</span>
           </p>
         </div>
 
         {/* Progress Tracker Card */}
-        <div className="glass-card p-6 sm:p-8 rounded-3xl border border-slate-800 space-y-6">
+        <div className="bg-white p-6 sm:p-8 rounded-xl border border-[#E4DDCB] space-y-6">
           <TransactionProgress status={deal.status} />
 
           {/* Countdown timer if dispatched */}
@@ -148,75 +144,71 @@ export default function PublicConfirmPage({ params }: { params: Promise<{ code: 
 
           {/* Settled Success State */}
           {deal.status === "settled" || settledSuccess ? (
-            <div className="p-8 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-center space-y-3 glow-emerald">
-              <CheckCircle2 className="w-12 h-12 text-emerald-400 mx-auto" />
-              <h3 className="text-xl font-extrabold text-white">Delivery Confirmed!</h3>
-              <p className="text-xs text-slate-300 max-w-md mx-auto">
-                Thank you! Escrow funds have been successfully released to <span className="font-bold text-white">{deal.sellerName}</span>.
+            <div className="p-6 rounded-lg bg-[#E1EBE3] border border-[#1C5A44]/20 text-center space-y-2">
+              <div className="inline-flex items-center space-x-1.5 text-[#1C5A44] font-semibold text-sm">
+                <Check className="w-5 h-5 stroke-[2.5]" />
+                <span>Delivery Confirmed & Released</span>
+              </div>
+              <p className="text-xs text-[#4A4438] max-w-sm mx-auto">
+                Thank you! Escrow funds have been safely released to <span className="font-semibold text-[#1F1B14]">{deal.sellerName}</span>.
               </p>
             </div>
           ) : deal.status === "disputed" ? (
-            <div className="p-6 rounded-2xl bg-rose-500/10 border border-rose-500/30 space-y-2">
-              <div className="flex items-center space-x-2 text-rose-400 font-bold text-sm">
-                <AlertTriangle className="w-5 h-5" />
-                <span>Dispute Active</span>
-              </div>
-              <p className="text-xs text-rose-200">
-                You have raised a dispute on this transaction. SETTLE support team is reviewing evidence and will resolve payouts shortly.
-              </p>
+            <div className="p-4 rounded-lg bg-[#F7E6E2] border border-[#A33B2E]/20 space-y-1 text-xs">
+              <span className="font-semibold text-[#A33B2E] block">Dispute Active</span>
+              <span className="text-[#4A4438]">
+                You have raised a dispute on this transaction. SETTLE support team is reviewing claims.
+              </span>
             </div>
           ) : deal.status === "dispatched" ? (
             /* Action Box for Buyer to Confirm Delivery */
-            <div className="p-6 rounded-2xl bg-slate-900 border border-slate-800 space-y-4">
+            <div className="p-5 rounded-lg bg-[#FAF6EE] border border-[#E4DDCB] space-y-4">
               <div className="space-y-1 text-center">
-                <h3 className="text-base font-extrabold text-white">Have you received your package?</h3>
-                <p className="text-xs text-slate-400">
-                  Enter your 4-digit delivery confirmation code to release funds to the seller.
+                <h3 className="text-sm font-semibold text-[#1F1B14]">Have you received your package?</h3>
+                <p className="text-xs text-[#8A8271]">
+                  Enter your 4-digit confirmation code below to release funds to the seller.
                 </p>
               </div>
 
               {confirmError && (
-                <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs font-semibold text-center">
+                <div className="p-3 rounded-lg bg-[#F7E6E2] border border-[#A33B2E]/20 text-[#A33B2E] text-xs font-medium text-center">
                   {confirmError}
                 </div>
               )}
 
               <form onSubmit={handleConfirmDelivery} className="space-y-4">
-                <div className="max-w-xs mx-auto">
-                  <input
-                    type="text"
-                    maxLength={4}
-                    required
-                    value={codeDigits}
-                    onChange={(e) => setCodeDigits(e.target.value)}
-                    placeholder="4-digit Code"
-                    className="w-full bg-slate-950 border border-slate-700 focus:border-emerald-500 rounded-2xl p-3.5 text-center text-2xl font-mono font-black tracking-widest text-emerald-400 outline-none"
-                  />
-                </div>
+                {/* Boxed Mono OTP Cells Component */}
+                <ConfirmationCodeBoxes
+                  value={codeDigits}
+                  onChange={setCodeDigits}
+                />
 
                 <button
                   type="submit"
                   disabled={confirming || codeDigits.length !== 4}
-                  className="w-full py-4 rounded-2xl text-sm font-extrabold bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-400 hover:to-cyan-400 text-slate-950 shadow-xl shadow-emerald-500/20 transition-all hover:scale-[1.02] flex items-center justify-center space-x-2 disabled:opacity-50"
+                  className="w-full h-12 btn-primary transition-colors disabled:opacity-50 text-sm font-semibold"
                 >
-                  <CheckCircle2 className="w-5 h-5 stroke-[2.5]" />
-                  <span>{confirming ? "Releasing Escrow..." : "Confirm Delivery & Release Payout"}</span>
+                  {confirming ? "Releasing Escrow..." : "Confirm Delivery"}
                 </button>
               </form>
 
-              <div className="pt-3 border-t border-slate-800 text-center">
+              {/* Recurring Trust Anchor */}
+              <p className="text-center text-[12px] text-[#8A8271] leading-relaxed pt-1 border-t border-[#E4DDCB]/60">
+                Your money is held securely by SETTLE and only released to the seller after you confirm delivery.
+              </p>
+
+              <div className="pt-1 text-center">
                 <button
                   onClick={() => setShowDisputeModal(true)}
-                  className="text-xs font-bold text-rose-400 hover:text-rose-300 underline"
+                  className="text-xs font-semibold text-[#A33B2E] hover:underline"
                 >
                   Item missing or damaged? Raise a Dispute
                 </button>
               </div>
             </div>
           ) : (
-            <div className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800 text-center text-xs text-slate-400 space-y-1">
-              <p className="font-bold text-slate-200">Waiting for seller dispatch...</p>
-              <p>Once seller ships your order, you can confirm delivery here using your confirmation code.</p>
+            <div className="p-4 rounded-lg bg-[#FAF6EE] border border-[#E4DDCB] text-center text-xs text-[#8A8271]">
+              Awaiting seller dispatch. Once shipped, you can confirm delivery here.
             </div>
           )}
         </div>
@@ -224,22 +216,22 @@ export default function PublicConfirmPage({ params }: { params: Promise<{ code: 
 
       {/* Dispute Modal */}
       {showDisputeModal && (
-        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="w-full max-w-md glass-card p-6 rounded-2xl border border-slate-800 space-y-5 shadow-2xl">
+        <div className="fixed inset-0 z-50 bg-[#1F1B14]/40 flex items-center justify-center p-4">
+          <div className="w-full max-w-[440px] bg-white p-6 rounded-xl border border-[#E4DDCB] space-y-4 shadow-[0_8px_24px_rgba(31,27,20,0.10)]">
             <div className="space-y-1">
-              <h3 className="text-lg font-extrabold text-white">Raise Transaction Dispute</h3>
-              <p className="text-xs text-slate-400">
+              <h3 className="text-base font-semibold text-[#1F1B14]">Raise Transaction Dispute</h3>
+              <p className="text-xs text-[#8A8271]">
                 This will freeze escrow payout while SETTLE admins investigate.
               </p>
             </div>
 
             <form onSubmit={handleRaiseDispute} className="space-y-4">
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-300">Dispute Category</label>
+              <div>
+                <label className="settle-label">Dispute Reason</label>
                 <select
                   value={disputeReason}
                   onChange={(e) => setDisputeReason(e.target.value)}
-                  className="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-xs text-white outline-none"
+                  className="w-full settle-input px-3 text-xs text-[#1F1B14]"
                 >
                   <option value="item_never_arrived">Item Never Arrived</option>
                   <option value="wrong_damaged_item">Wrong or Damaged Item Received</option>
@@ -247,41 +239,41 @@ export default function PublicConfirmPage({ params }: { params: Promise<{ code: 
                 </select>
               </div>
 
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-300">Description of Issue</label>
+              <div>
+                <label className="settle-label">Description of Issue</label>
                 <textarea
                   rows={3}
                   required
                   value={disputeDesc}
                   onChange={(e) => setDisputeDesc(e.target.value)}
-                  placeholder="Describe what went wrong..."
-                  className="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-xs text-white outline-none resize-none"
+                  placeholder="Explain what went wrong..."
+                  className="w-full settle-input p-3 text-xs h-auto resize-none"
                 />
               </div>
 
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-300">Photo / Evidence URL (Optional)</label>
+              <div>
+                <label className="settle-label">Photo / Evidence URL (Optional)</label>
                 <input
                   type="url"
                   value={evidenceUrl}
                   onChange={(e) => setEvidenceUrl(e.target.value)}
-                  placeholder="https://imgur.com/your-photo.jpg"
-                  className="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-xs text-white outline-none"
+                  placeholder="https://example.com/evidence-photo.jpg"
+                  className="w-full settle-input px-3 text-xs"
                 />
               </div>
 
-              <div className="flex gap-3 pt-2">
+              <div className="flex gap-2 pt-2">
                 <button
                   type="button"
                   onClick={() => setShowDisputeModal(false)}
-                  className="flex-1 py-2.5 rounded-xl bg-slate-900 text-slate-400 text-xs font-bold border border-slate-800"
+                  className="flex-1 h-10 btn-secondary text-xs"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={disputeSubmitting}
-                  className="flex-1 py-2.5 rounded-xl bg-rose-500 text-white text-xs font-bold disabled:opacity-50"
+                  className="flex-1 h-10 btn-primary text-xs bg-[#A33B2E] hover:bg-[#852E23] text-white disabled:opacity-50"
                 >
                   {disputeSubmitting ? "Submitting..." : "Submit Dispute"}
                 </button>

@@ -1,110 +1,116 @@
 @import "tailwindcss";
 
-@layer base {
-  :root {
-    --background: 224 71% 4%;
-    --foreground: 210 40% 98%;
-    
-    --card: 222 47% 7%;
-    --card-foreground: 210 40% 98%;
-    --card-border: 217 33% 15%;
-    
-    --primary: 158 84% 39%;
-    --primary-foreground: 210 40% 98%;
-    
-    --secondary: 217 33% 12%;
-    --secondary-foreground: 210 40% 98%;
-    
-    --accent: 187 92% 41%;
-    --accent-foreground: 210 40% 98%;
-    
-    --muted: 217 33% 15%;
-    --muted-foreground: 215 20.2% 65.1%;
-    
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    
-    --border: 217 33% 15%;
-    --input: 217 33% 15%;
-    --ring: 158 84% 39%;
-    
-    --radius: 0.75rem;
-  }
+:root {
+  --bg-cream: #FAF6EE;
+  --bg-cream-alt: #F3EDE0;
+  --surface-card: #FFFFFF;
+  --border-hairline: #E4DDCB;
+
+  --ink-900: #1F1B14;
+  --ink-700: #4A4438;
+  --ink-500: #8A8271;
+  --ink-300: #C7BFAC;
+
+  --accent-900: #123C2E;
+  --accent-700: #1C5A44;
+  --accent-100: #E1EBE3;
+
+  --status-pending-text: #B7791F;
+  --status-pending-bg: #FBF0DA;
+
+  --status-success-text: #1C5A44;
+  --status-success-bg: #E1EBE3;
+
+  --status-locked-text: #3E5C76;
+  --status-locked-bg: #E7ECF1;
+
+  --status-error-text: #A33B2E;
+  --status-error-bg: #F7E6E2;
 }
 
 body {
-  background-color: #050811;
-  color: #f8fafc;
-  font-family: var(--font-geist-sans), system-ui, -apple-system, sans-serif;
+  background-color: var(--bg-cream);
+  color: var(--ink-700);
+  font-family: var(--font-geist-sans), Inter, system-ui, -apple-system, sans-serif;
   min-height: 100vh;
 }
 
-/* Custom Utilities & Animations */
-.glass-panel {
-  background: rgba(13, 20, 36, 0.75);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+/* Monospace Utility */
+.font-mono {
+  font-family: var(--font-geist-mono), "IBM Plex Mono", ui-monospace, monospace;
 }
 
-.glass-card {
-  background: linear-gradient(135deg, rgba(17, 26, 46, 0.8) 0%, rgba(10, 15, 29, 0.9) 100%);
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+/* Card Style */
+.settle-card {
+  background-color: var(--surface-card);
+  border: 1px solid var(--border-hairline);
+  border-radius: 12px;
 }
 
-.glow-emerald {
-  box-shadow: 0 0 25px -5px rgba(16, 185, 129, 0.3);
+/* Form Elements */
+.settle-input {
+  background-color: var(--surface-card);
+  border: 1px solid var(--border-hairline);
+  border-radius: 8px;
+  height: 44px;
+  color: var(--ink-900);
+  font-size: 15px;
+  transition: border-color 0.15s ease;
 }
 
-.glow-cyan {
-  box-shadow: 0 0 25px -5px rgba(6, 182, 212, 0.3);
+.settle-input:focus {
+  outline: none;
+  border: 1.5px solid var(--accent-700);
 }
 
-.gradient-text {
-  background: linear-gradient(135deg, #34d399 0%, #38bdf8 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+.settle-label {
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ink-500);
+  margin-bottom: 4px;
+  display: block;
 }
 
-.gradient-border {
-  position: relative;
-  border-radius: var(--radius);
-  background: linear-gradient(135deg, rgba(52, 211, 153, 0.3), rgba(56, 189, 248, 0.3));
-  padding: 1px;
+/* Buttons */
+.btn-primary {
+  background-color: var(--accent-700);
+  color: #FFFFFF;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 15px;
+  border: none;
+  transition: background-color 0.15s ease;
 }
 
-.gradient-border > div {
-  background: #0b1120;
-  border-radius: calc(var(--radius) - 1px);
+.btn-primary:hover {
+  background-color: var(--accent-900);
 }
 
-/* Animation utilities */
-@keyframes pulseGlow {
-  0%, 100% { opacity: 0.4; }
-  50% { opacity: 0.8; }
+.btn-secondary {
+  background-color: transparent;
+  border: 1px solid var(--border-hairline);
+  color: var(--ink-900);
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 15px;
+  transition: background-color 0.15s ease;
 }
 
-.animate-pulse-glow {
-  animation: pulseGlow 3s infinite ease-in-out;
+.btn-secondary:hover {
+  background-color: var(--bg-cream-alt);
 }
 
-/* Custom Scrollbars */
+/* Custom Scrollbar */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
-
 ::-webkit-scrollbar-track {
-  background: #050811;
+  background: var(--bg-cream);
 }
-
 ::-webkit-scrollbar-thumb {
-  background: #1e293b;
-  border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: #334155;
+  background: var(--border-hairline);
+  border-radius: 3px;
 }

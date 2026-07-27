@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "SETTLE — West Africa P2P Escrow Platform",
-  description: "Secure escrow payment links for informal West African social commerce on WhatsApp & Instagram.",
+  title: "SETTLE — Peer-to-Peer Escrow for WhatsApp & IG Sellers",
+  description: "Peer-to-peer escrow payment platform for informal commerce in West Africa. Sellers generate payment links, buyers pay via MoMo or Card.",
 };
 
 export default function RootLayout({
@@ -26,14 +26,14 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased dark`}
+      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-[#050811] text-slate-100 selection:bg-emerald-500 selection:text-slate-950">
+      <body className="min-h-full flex flex-col bg-[#FAF6EE] text-[#4A4438] selection:bg-[#E1EBE3] selection:text-[#123C2E]">
         <Navbar />
         <main className="flex-1 flex flex-col">{children}</main>
-        <footer className="border-t border-slate-900 bg-slate-950/60 py-8 mt-auto">
-          <div className="max-w-7xl mx-auto px-4 text-center text-xs text-slate-400">
-            <p>© {new Date().getFullYear()} SETTLE Escrow Platform. Building Trust in African Commerce.</p>
+        <footer className="border-t border-[#E4DDCB] bg-[#FAF6EE] py-6 mt-auto">
+          <div className="max-w-[1120px] mx-auto px-4 text-center text-xs text-[#8A8271]">
+            <p>© {new Date().getFullYear()} SETTLE — Peer-to-Peer Escrow Platform for West Africa</p>
           </div>
         </footer>
       </body>
