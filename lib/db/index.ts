@@ -175,19 +175,38 @@ class MemoryStore {
 }
 
 const memoryStore = new MemoryStore();
-const isPgAvailable = Boolean(process.env.DATABASE_URL);
 
 let dbPool: Pool | null = null;
 let drizzleDb: ReturnType<typeof drizzle> | null = null;
 
-if (isPgAvailable) {
-  try {
-    dbPool = new Pool({ connectionString: process.env.DATABASE_URL });
-    drizzleDb = drizzle(dbPool, { schema });
-  } catch (e) {
-    console.warn("Failed to initialize PostgreSQL pool, using memory store fallback.", e);
+function getDb() {
+  const connectionString = process.env.DATABASE_URL;
+  if (!connectionString) {
+    if (!(globalThis as any).__warnedNoDbUrl) {
+      console.warn("⚠️ DATABASE_URL is not set in .env.local — Settle is operating on temporary in-memory fallback. Add DATABASE_URL to save records directly to Supabase!");
+      (globalThis as any).__warnedNoDbUrl = true;
+    }
+    return null;
   }
+  if (!drizzleDb) {
+    try {
+      dbPool = new Pool({
+        connectionString,
+        ssl: connectionString.includes("localhost") || connectionString.includes("127.0.0.1")
+          ? false
+          : { rejectUnauthorized: false },
+      });
+      drizzleDb = drizzle(dbPool, { schema });
+      console.log("✅ Database pool connected to PostgreSQL / Supabase");
+    } catch (e) {
+      console.warn("⚠️ Failed to initialize PostgreSQL pool, using memory store fallback.", e);
+      drizzleDb = null;
+    }
+  }
+  return drizzleDb;
 }
+
+
 
 // Global auto-settle check helper
 export async function autoSettleIfOverdue(deal: DealRecord): Promise<DealRecord> {
@@ -196,7 +215,6 @@ export async function autoSettleIfOverdue(deal: DealRecord): Promise<DealRecord>
   }
   const now = new Date();
   if (now > new Date(deal.deliveryDeadline)) {
-    // Delivery window expired with no dispute: auto-settle!
     const settledAt = now;
     const updatedDeal: DealRecord = {
       ...deal,
@@ -204,20 +222,21 @@ export async function autoSettleIfOverdue(deal: DealRecord): Promise<DealRecord>
       settledAt,
     };
 
-    if (drizzleDb) {
-      await drizzleDb
+    const db = getDb();
+    if (db) {
+      await db
         .update(schema.dealsTable)
         .set({ status: "settled", settledAt })
         .where(eq(schema.dealsTable.id, deal.id));
 
-      await drizzleDb
+      await db
         .update(schema.sellersTable)
         .set({
           totalEarnings: sql`${schema.sellersTable.totalEarnings} + ${deal.sellerPayout}`,
         })
         .where(eq(schema.sellersTable.id, deal.sellerId));
 
-      await drizzleDb.insert(schema.activityTable).values({
+      await db.insert(schema.activityTable).values({
         sellerId: deal.sellerId,
         dealId: deal.id,
         type: "settled",
@@ -255,8 +274,9 @@ export async function autoSettleIfOverdue(deal: DealRecord): Promise<DealRecord>
 export const dbService = {
   // Sellers
   async findSellerByEmail(email: string): Promise<SellerRecord | null> {
-    if (drizzleDb) {
-      const [res] = await drizzleDb.select().from(schema.sellersTable).where(eq(schema.sellersTable.email, email)).limit(1);
+    const db = getDb();
+    if (db) {
+      const [res] = await db.select().from(schema.sellersTable).where(eq(schema.sellersTable.email, email)).limit(1);
       if (!res) return null;
       return {
         ...res,
@@ -267,8 +287,9 @@ export const dbService = {
   },
 
   async findSellerById(id: number): Promise<SellerRecord | null> {
-    if (drizzleDb) {
-      const [res] = await drizzleDb.select().from(schema.sellersTable).where(eq(schema.sellersTable.id, id)).limit(1);
+    const db = getDb();
+    if (db) {
+      const [res] = await db.select().from(schema.sellersTable).where(eq(schema.sellersTable.id, id)).limit(1);
       if (!res) return null;
       return {
         ...res,
@@ -279,8 +300,9 @@ export const dbService = {
   },
 
   async createSeller(data: { name: string; email: string; phone: string; passwordHash: string; walletAddress: string }): Promise<SellerRecord> {
-    if (drizzleDb) {
-      const [inserted] = await drizzleDb.insert(schema.sellersTable).values(data).returning();
+    const db = getDb();
+    if (db) {
+      const [inserted] = await db.insert(schema.sellersTable).values(data).returning();
       return {
         ...inserted,
         totalEarnings: inserted.totalEarnings,
@@ -302,12 +324,13 @@ export const dbService = {
 
   // Deals
   async listDealsForSeller(sellerId: number, status?: string, limit = 20, offset = 0) {
-    if (drizzleDb) {
+    const db = getDb();
+    if (db) {
       const conditions = [eq(schema.dealsTable.sellerId, sellerId)];
       if (status) {
         conditions.push(eq(schema.dealsTable.status, status as any));
       }
-      const deals = await drizzleDb
+      const deals = await db
         .select()
         .from(schema.dealsTable)
         .where(and(...conditions))
@@ -315,7 +338,7 @@ export const dbService = {
         .limit(limit)
         .offset(offset);
 
-      const countRes = await drizzleDb
+      const countRes = await db
         .select({ count: sql<number>`count(*)` })
         .from(schema.dealsTable)
         .where(and(...conditions));
@@ -341,13 +364,14 @@ export const dbService = {
 
   async getDealById(id: number, sellerId?: number): Promise<DealRecord | null> {
     let deal: DealRecord | null = null;
+    const db = getDb();
 
-    if (drizzleDb) {
+    if (db) {
       const conditions = [eq(schema.dealsTable.id, id)];
       if (sellerId !== undefined) {
         conditions.push(eq(schema.dealsTable.sellerId, sellerId));
       }
-      const [res] = await drizzleDb.select().from(schema.dealsTable).where(and(...conditions)).limit(1);
+      const [res] = await db.select().from(schema.dealsTable).where(and(...conditions)).limit(1);
       deal = (res as DealRecord) || null;
     } else {
       deal = memoryStore.deals.find((d) => d.id === id && (sellerId === undefined || d.sellerId === sellerId)) || null;
@@ -361,8 +385,9 @@ export const dbService = {
 
   async getDealByCode(code: string): Promise<DealRecord | null> {
     let deal: DealRecord | null = null;
-    if (drizzleDb) {
-      const [res] = await drizzleDb.select().from(schema.dealsTable).where(eq(schema.dealsTable.code, code)).limit(1);
+    const db = getDb();
+    if (db) {
+      const [res] = await db.select().from(schema.dealsTable).where(eq(schema.dealsTable.code, code)).limit(1);
       deal = (res as DealRecord) || null;
     } else {
       deal = memoryStore.deals.find((d) => d.code === code) || null;
@@ -385,9 +410,10 @@ export const dbService = {
     deliveryWindowHours: number;
     sellerId: number;
   }): Promise<DealRecord> {
-    if (drizzleDb) {
-      const [inserted] = await drizzleDb.insert(schema.dealsTable).values(data).returning();
-      await drizzleDb.insert(schema.activityTable).values({
+    const db = getDb();
+    if (db) {
+      const [inserted] = await db.insert(schema.dealsTable).values(data).returning();
+      await db.insert(schema.activityTable).values({
         sellerId: data.sellerId,
         dealId: inserted.id,
         type: "deal_created",
@@ -437,8 +463,9 @@ export const dbService = {
   },
 
   async updateDeal(id: number, updates: Partial<DealRecord>): Promise<DealRecord | null> {
-    if (drizzleDb) {
-      const [updated] = await drizzleDb
+    const db = getDb();
+    if (db) {
+      const [updated] = await db
         .update(schema.dealsTable)
         .set(updates as any)
         .where(eq(schema.dealsTable.id, id))
@@ -456,8 +483,9 @@ export const dbService = {
     const deal = await this.getDealById(id, sellerId);
     if (!deal || deal.status !== "created") return false;
 
-    if (drizzleDb) {
-      await drizzleDb.delete(schema.dealsTable).where(and(eq(schema.dealsTable.id, id), eq(schema.dealsTable.sellerId, sellerId)));
+    const db = getDb();
+    if (db) {
+      await db.delete(schema.dealsTable).where(and(eq(schema.dealsTable.id, id), eq(schema.dealsTable.sellerId, sellerId)));
     } else {
       memoryStore.deals = memoryStore.deals.filter((d) => d.id !== id);
     }
@@ -466,16 +494,18 @@ export const dbService = {
 
   // Disputes
   async getDisputeByDealId(dealId: number): Promise<DisputeRecord | null> {
-    if (drizzleDb) {
-      const [res] = await drizzleDb.select().from(schema.disputesTable).where(eq(schema.disputesTable.dealId, dealId)).limit(1);
+    const db = getDb();
+    if (db) {
+      const [res] = await db.select().from(schema.disputesTable).where(eq(schema.disputesTable.dealId, dealId)).limit(1);
       return (res as DisputeRecord) || null;
     }
     return memoryStore.disputes.find((d) => d.dealId === dealId) || null;
   },
 
   async listAllDisputes() {
-    if (drizzleDb) {
-      const disputes = await drizzleDb.select().from(schema.disputesTable).orderBy(desc(schema.disputesTable.createdAt));
+    const db = getDb();
+    if (db) {
+      const disputes = await db.select().from(schema.disputesTable).orderBy(desc(schema.disputesTable.createdAt));
       return disputes as DisputeRecord[];
     }
     return [...memoryStore.disputes].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
@@ -490,9 +520,10 @@ export const dbService = {
     const deal = await this.getDealById(data.dealId);
     if (!deal) throw new Error("Deal not found");
 
-    if (drizzleDb) {
-      await drizzleDb.update(schema.dealsTable).set({ status: "disputed" }).where(eq(schema.dealsTable.id, deal.id));
-      const [dispute] = await drizzleDb
+    const db = getDb();
+    if (db) {
+      await db.update(schema.dealsTable).set({ status: "disputed" }).where(eq(schema.dealsTable.id, deal.id));
+      const [dispute] = await db
         .insert(schema.disputesTable)
         .values({
           dealId: deal.id,
@@ -501,7 +532,7 @@ export const dbService = {
           evidenceUrl: data.evidenceUrl,
         })
         .returning();
-      await drizzleDb.insert(schema.activityTable).values({
+      await db.insert(schema.activityTable).values({
         sellerId: deal.sellerId,
         dealId: deal.id,
         type: "dispute_raised",
@@ -542,8 +573,9 @@ export const dbService = {
   },
 
   async updateDispute(id: number, updates: Partial<DisputeRecord>): Promise<DisputeRecord | null> {
-    if (drizzleDb) {
-      const [updated] = await drizzleDb
+    const db = getDb();
+    if (db) {
+      const [updated] = await db
         .update(schema.disputesTable)
         .set(updates as any)
         .where(eq(schema.disputesTable.id, id))
@@ -560,8 +592,9 @@ export const dbService = {
   // Dashboard Stats
   async getDashboardStats(sellerId: number) {
     const seller = await this.findSellerById(sellerId);
-    if (drizzleDb) {
-      const [stats] = await drizzleDb
+    const db = getDb();
+    if (db) {
+      const [stats] = await db
         .select({
           total: sql<number>`count(*)`,
           settled: sql<number>`count(*) filter (where status = 'settled')`,
@@ -572,7 +605,7 @@ export const dbService = {
         .from(schema.dealsTable)
         .where(eq(schema.dealsTable.sellerId, sellerId));
 
-      const recentSettlements = await drizzleDb
+      const recentSettlements = await db
         .select()
         .from(schema.dealsTable)
         .where(and(eq(schema.dealsTable.sellerId, sellerId), eq(schema.dealsTable.status, "settled")))
@@ -616,8 +649,9 @@ export const dbService = {
   },
 
   async addActivity(data: { sellerId: number; dealId: number; type: ActivityRecord["type"]; itemName: string; amount: string; buyerName?: string }) {
-    if (drizzleDb) {
-      await drizzleDb.insert(schema.activityTable).values(data);
+    const db = getDb();
+    if (db) {
+      await db.insert(schema.activityTable).values(data);
     } else {
       memoryStore.activity.unshift({
         id: memoryStore.nextActivityId++,
@@ -632,3 +666,4 @@ export const dbService = {
     }
   },
 };
+
